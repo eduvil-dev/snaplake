@@ -96,6 +96,9 @@ class SnapshotPersistenceAdapter(
             .findByDatasourceIdAndStatus(datasourceId.value, status.name)
             ?.let { mapper.toDomain(it) }
 
+    override fun findAllByStatus(status: SnapshotStatus): List<SnapshotMeta> =
+        jpaRepository.findAllByStatus(status.name).map { mapper.toDomain(it) }
+
     override fun findAll(): List<SnapshotMeta> = jpaRepository.findAll().map { mapper.toDomain(it) }
 
     override fun deleteById(id: SnapshotId) {

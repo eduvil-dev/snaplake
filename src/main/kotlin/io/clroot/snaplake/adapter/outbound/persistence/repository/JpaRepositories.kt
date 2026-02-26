@@ -20,6 +20,8 @@ interface SnapshotJpaRepository : JpaRepository<SnapshotEntity, String> {
         datasourceId: String,
         status: String,
     ): SnapshotEntity?
+
+    fun findAllByStatus(status: String): List<SnapshotEntity>
 }
 
 interface SnapshotTableJpaRepository : JpaRepository<SnapshotTableEntity, String>
