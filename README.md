@@ -1,3 +1,5 @@
+> [한국어](README.ko.md)
+
 # Snaplake
 
 Self-hosted database snapshot management platform. Captures point-in-time snapshots from PostgreSQL and MySQL databases as Parquet files, stores them locally or on S3, and lets you query and compare snapshots with SQL powered by DuckDB.
