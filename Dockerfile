@@ -18,6 +18,7 @@ RUN gradle bootJar --no-daemon -x buildFrontend -x test
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+RUN apk add --no-cache libstdc++
 RUN addgroup -S snaplake && adduser -S snaplake -G snaplake
 RUN mkdir -p /app/data && chown -R snaplake:snaplake /app
 
