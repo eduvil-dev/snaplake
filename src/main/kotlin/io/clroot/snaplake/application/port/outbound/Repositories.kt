@@ -50,6 +50,8 @@ interface LoadSnapshotPort {
         status: SnapshotStatus,
     ): SnapshotMeta?
 
+    fun findAllByStatus(status: SnapshotStatus): List<SnapshotMeta>
+
     fun findAll(): List<SnapshotMeta>
 
     fun deleteById(id: SnapshotId)

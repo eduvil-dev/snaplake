@@ -2,6 +2,7 @@ package io.clroot.snaplake.application.service
 
 import io.clroot.snaplake.application.port.inbound.DeleteSnapshotUseCase
 import io.clroot.snaplake.application.port.inbound.GetSnapshotUseCase
+import io.clroot.snaplake.application.port.inbound.RecoverOrphanedSnapshotsUseCase
 import io.clroot.snaplake.application.port.inbound.TakeSnapshotUseCase
 import io.clroot.snaplake.application.port.outbound.*
 import io.clroot.snaplake.domain.exception.DatasourceNotFoundException
@@ -28,7 +29,8 @@ class SnapshotService(
     private val parquetWritePort: ParquetWritePort,
 ) : TakeSnapshotUseCase,
     GetSnapshotUseCase,
-    DeleteSnapshotUseCase {
+    DeleteSnapshotUseCase,
+    RecoverOrphanedSnapshotsUseCase {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun takeSnapshot(datasourceId: DatasourceId): SnapshotMeta {
@@ -65,98 +67,110 @@ class SnapshotService(
         val errors = mutableListOf<String>()
 
         try {
-            dialect.createConnection(datasource, decryptedPassword).use { conn ->
-                for (schema in datasource.schemas) {
-                    val tables =
-                        try {
-                            dialect.listTables(conn, schema)
-                        } catch (e: Exception) {
-                            log.error("Failed to list tables for schema '{}': {}", schema, e.message)
-                            errors.add("Failed to list tables for schema '$schema': ${e.message}")
-                            continue
-                        }
+            try {
+                dialect.createConnection(datasource, decryptedPassword).use { conn ->
+                    for (schema in datasource.schemas) {
+                        val tables =
+                            try {
+                                dialect.listTables(conn, schema)
+                            } catch (e: Exception) {
+                                log.error("Failed to list tables for schema '{}': {}", schema, e.message)
+                                errors.add("Failed to list tables for schema '$schema': ${e.message}")
+                                continue
+                            }
 
-                    for (table in tables) {
-                        try {
-                            val rs =
-                                conn.createStatement().executeQuery(
-                                    "SELECT * FROM \"${table.schema}\".\"${table.name}\"",
+                        for (table in tables) {
+                            try {
+                                val rs =
+                                    conn.createStatement().executeQuery(
+                                        "SELECT * FROM \"${table.schema}\".\"${table.name}\"",
+                                    )
+                                val result = parquetWritePort.writeResultSetToParquet(rs)
+                                rs.close()
+
+                                val storagePath =
+                                    buildStoragePath(
+                                        datasource.name,
+                                        snapshotType,
+                                        snapshotDate,
+                                        snapshot.id,
+                                        table.schema,
+                                        table.name,
+                                    )
+                                storageProvider.write(storagePath, result.data)
+
+                                val primaryKeys =
+                                    try {
+                                        dialect.listPrimaryKeys(conn, table.schema, table.name)
+                                    } catch (e: Exception) {
+                                        log.warn("Failed to get PKs for {}.{}: {}", table.schema, table.name, e.message)
+                                        emptyList()
+                                    }
+
+                                snapshot.addTable(
+                                    TableMeta(
+                                        schema = table.schema,
+                                        table = table.name,
+                                        rowCount = result.rowCount,
+                                        sizeBytes = result.data.size.toLong(),
+                                        storagePath = storagePath,
+                                        primaryKeys = primaryKeys,
+                                    ),
                                 )
-                            val result = parquetWritePort.writeResultSetToParquet(rs)
-                            rs.close()
 
-                            val storagePath =
-                                buildStoragePath(
-                                    datasource.name,
-                                    snapshotType,
-                                    snapshotDate,
-                                    snapshot.id,
+                                log.info(
+                                    "Snapshot table {}.{}: {} rows, {} bytes",
                                     table.schema,
                                     table.name,
+                                    result.rowCount,
+                                    result.data.size,
                                 )
-                            storageProvider.write(storagePath, result.data)
-
-                            val primaryKeys =
-                                try {
-                                    dialect.listPrimaryKeys(conn, table.schema, table.name)
-                                } catch (e: Exception) {
-                                    log.warn("Failed to get PKs for {}.{}: {}", table.schema, table.name, e.message)
-                                    emptyList()
-                                }
-
-                            snapshot.addTable(
-                                TableMeta(
-                                    schema = table.schema,
-                                    table = table.name,
-                                    rowCount = result.rowCount,
-                                    sizeBytes = result.data.size.toLong(),
-                                    storagePath = storagePath,
-                                    primaryKeys = primaryKeys,
-                                ),
-                            )
-
-                            log.info(
-                                "Snapshot table {}.{}: {} rows, {} bytes",
-                                table.schema,
-                                table.name,
-                                result.rowCount,
-                                result.data.size,
-                            )
-                        } catch (e: Exception) {
-                            log.error(
-                                "Failed to snapshot table {}.{}: {}",
-                                table.schema,
-                                table.name,
-                                e.message,
-                            )
-                            errors.add("Failed to snapshot ${table.schema}.${table.name}: ${e.message}")
+                            } catch (e: Exception) {
+                                log.error(
+                                    "Failed to snapshot table {}.{}: {}",
+                                    table.schema,
+                                    table.name,
+                                    e.message,
+                                )
+                                errors.add("Failed to snapshot ${table.schema}.${table.name}: ${e.message}")
+                            }
                         }
                     }
                 }
+            } catch (e: Exception) {
+                log.error("Failed to connect to datasource '{}': {}", datasource.name, e.message)
+                snapshot.fail("Connection failed: ${e.message}")
+                saveSnapshotPort.save(snapshot)
+                return snapshot
             }
-        } catch (e: Exception) {
-            log.error("Failed to connect to datasource '{}': {}", datasource.name, e.message)
-            snapshot.fail("Connection failed: ${e.message}")
+
+            if (errors.isNotEmpty()) {
+                snapshot.fail(errors.joinToString("; "))
+            } else {
+                snapshot.complete()
+            }
             saveSnapshotPort.save(snapshot)
+
+            // Handle monthly snapshots (1st of month)
+            if (snapshotDate.dayOfMonth == 1) {
+                copyToMonthly(datasource, snapshot, snapshotDate)
+            }
+
+            // Apply retention policy
+            applyRetention(datasource)
+
             return snapshot
+        } finally {
+            if (snapshot.status == SnapshotStatus.RUNNING) {
+                try {
+                    snapshot.fail("Snapshot terminated unexpectedly")
+                    saveSnapshotPort.save(snapshot)
+                    log.error("Snapshot {} terminated unexpectedly, marked as FAILED", snapshot.id.value)
+                } catch (ex: Exception) {
+                    log.error("Failed to mark orphaned snapshot {} as FAILED: {}", snapshot.id.value, ex.message)
+                }
+            }
         }
-
-        if (errors.isNotEmpty()) {
-            snapshot.fail(errors.joinToString("; "))
-        } else {
-            snapshot.complete()
-        }
-        saveSnapshotPort.save(snapshot)
-
-        // Handle monthly snapshots (1st of month)
-        if (snapshotDate.dayOfMonth == 1) {
-            copyToMonthly(datasource, snapshot, snapshotDate)
-        }
-
-        // Apply retention policy
-        applyRetention(datasource)
-
-        return snapshot
     }
 
     @Transactional(readOnly = true)
@@ -185,6 +199,28 @@ class SnapshotService(
         }
 
         loadSnapshotPort.deleteById(id)
+    }
+
+    override fun recoverAll(): Int {
+        val runningSnapshots = loadSnapshotPort.findAllByStatus(SnapshotStatus.RUNNING)
+        runningSnapshots.forEach { snapshot ->
+            snapshot.fail("Recovered on server startup (orphaned RUNNING state)")
+            saveSnapshotPort.save(snapshot)
+            log.warn("Recovered orphaned RUNNING snapshot {} on startup", snapshot.id.value)
+        }
+        return runningSnapshots.size
+    }
+
+    override fun recoverStale(): Int {
+        val staleThreshold = Instant.now().minus(STALE_SNAPSHOT_TIMEOUT)
+        val runningSnapshots = loadSnapshotPort.findAllByStatus(SnapshotStatus.RUNNING)
+        val staleSnapshots = runningSnapshots.filter { it.startedAt.isBefore(staleThreshold) }
+        staleSnapshots.forEach { snapshot ->
+            snapshot.fail("Snapshot timed out (stale RUNNING state detected by background scan)")
+            saveSnapshotPort.save(snapshot)
+            log.warn("Recovered stale RUNNING snapshot {} (started at {})", snapshot.id.value, snapshot.startedAt)
+        }
+        return staleSnapshots.size
     }
 
     private fun buildStoragePath(
