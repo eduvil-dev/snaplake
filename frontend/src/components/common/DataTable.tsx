@@ -1,14 +1,15 @@
 import {
   Table,
+  TableHead,
+  TableRow,
+  TableHeader,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+  Button,
+  Pagination,
+} from "@carbon/react"
+import { ArrowDown, ArrowUp, ArrowsVertical, Download } from "@carbon/react/icons"
 import { CellDisplay } from "./CellDisplay"
-import { ArrowDown, ArrowUp, ArrowUpDown, Download } from "lucide-react"
 
 export interface Column {
   name: string
@@ -44,131 +45,107 @@ export function DataTable({
   onRowClick,
   onCellClick,
 }: DataTableProps) {
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
-  const startRow = page * pageSize + 1
-  const endRow = Math.min((page + 1) * pageSize, totalRows)
-
   return (
-    <div className="min-w-0 space-y-4">
-      {/* Export buttons */}
+    <div>
       {onExport && (
-        <div className="flex justify-end gap-2">
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "1rem" }}>
           <Button
-            variant="outline"
+            kind="ghost"
             size="sm"
+            renderIcon={Download}
             onClick={() => onExport("csv")}
           >
-            <Download className="mr-1 h-3 w-3" />
             CSV
           </Button>
           <Button
-            variant="outline"
+            kind="ghost"
             size="sm"
+            renderIcon={Download}
             onClick={() => onExport("json")}
           >
-            <Download className="mr-1 h-3 w-3" />
             JSON
           </Button>
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border overflow-auto">
-        <Table>
-          <TableHeader>
+      <Table>
+        <TableHead>
+          <TableRow>
+            {columns.map((col) => (
+              <TableHeader
+                key={col.name}
+                isSortable={!!onSort}
+                isSortHeader={sortColumn === col.name}
+                sortDirection={
+                  sortColumn === col.name
+                    ? sortDirection === "asc"
+                      ? "ASC"
+                      : "DESC"
+                    : "NONE"
+                }
+                onClick={() => onSort?.(col.name)}
+              >
+                <span>{col.name}</span>
+                {" "}
+                <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>{col.type}</span>
+                {onSort && sortColumn !== col.name && (
+                  <ArrowsVertical size={12} style={{ marginLeft: "0.25rem", opacity: 0.3 }} />
+                )}
+                {onSort && sortColumn === col.name && (
+                  sortDirection === "asc"
+                    ? <ArrowUp size={12} style={{ marginLeft: "0.25rem" }} />
+                    : <ArrowDown size={12} style={{ marginLeft: "0.25rem" }} />
+                )}
+              </TableHeader>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.length === 0 ? (
             <TableRow>
-              {columns.map((col) => (
-                <TableHead
-                  key={col.name}
-                  className={onSort ? "cursor-pointer select-none" : ""}
-                  onClick={() => onSort?.(col.name)}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>{col.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {col.type}
-                    </span>
-                    {onSort &&
-                      (sortColumn === col.name ? (
-                        sortDirection === "asc" ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
-                      ))}
-                  </div>
-                </TableHead>
-              ))}
+              <TableCell
+                colSpan={columns.length}
+                style={{ textAlign: "center", padding: "2rem 0" }}
+              >
+                No data
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  No data
-                </TableCell>
+          ) : (
+            rows.map((row, i) => (
+              <TableRow
+                key={i}
+                style={onRowClick ? { cursor: "pointer" } : undefined}
+                onClick={() => onRowClick?.(i)}
+              >
+                {row.map((cell, j) => (
+                  <TableCell
+                    key={j}
+                    style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    onClick={
+                      onCellClick
+                        ? (e: React.MouseEvent) => {
+                            e.stopPropagation()
+                            onCellClick(i, j)
+                          }
+                        : undefined
+                    }
+                  >
+                    <CellDisplay value={cell} />
+                  </TableCell>
+                ))}
               </TableRow>
-            ) : (
-              rows.map((row, i) => (
-                <TableRow
-                  key={i}
-                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
-                  onClick={() => onRowClick?.(i)}
-                >
-                  {row.map((cell, j) => (
-                    <TableCell
-                      key={j}
-                      className="max-w-xs truncate"
-                      onClick={
-                        onCellClick
-                          ? (e) => {
-                              e.stopPropagation()
-                              onCellClick(i, j)
-                            }
-                          : undefined
-                      }
-                    >
-                      <CellDisplay value={cell} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {totalRows > 0
-            ? `Showing ${startRow}-${endRow} of ${totalRows.toLocaleString()} rows`
-            : "No rows"}
-        </p>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0}
-            onClick={() => onPageChange(page - 1)}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages - 1}
-            onClick={() => onPageChange(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <Pagination
+        page={page + 1}
+        totalItems={totalRows}
+        pageSize={pageSize}
+        pageSizes={[pageSize]}
+        onChange={({ page: newPage }: { page: number }) => onPageChange(newPage - 1)}
+      />
     </div>
   )
 }

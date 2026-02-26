@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Modal } from "@carbon/react"
 
 interface Shortcut {
   keys: string[]
@@ -52,34 +47,50 @@ export function ShortcutHelp() {
   }, [])
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2 pt-2">
-          {shortcuts.map((shortcut) => (
-            <div
-              key={shortcut.description}
-              className="flex items-center justify-between py-2"
-            >
-              <span className="text-sm text-muted-foreground">
-                {shortcut.description}
-              </span>
-              <div className="flex items-center gap-1">
-                {shortcut.keys.map((key) => (
-                  <kbd
-                    key={key}
-                    className="inline-flex h-6 min-w-6 items-center justify-center rounded border bg-muted px-1.5 text-xs font-medium text-muted-foreground"
-                  >
-                    {formatKey(key)}
-                  </kbd>
-                ))}
-              </div>
+    <Modal
+      open={open}
+      onRequestClose={() => setOpen(false)}
+      modalHeading="Keyboard Shortcuts"
+      passiveModal
+      size="sm"
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        {shortcuts.map((shortcut) => (
+          <div
+            key={shortcut.description}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.5rem 0",
+            }}
+          >
+            <span>{shortcut.description}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+              {shortcut.keys.map((key) => (
+                <kbd
+                  key={key}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "1.5rem",
+                    height: "1.5rem",
+                    padding: "0 0.375rem",
+                    borderRadius: "0.25rem",
+                    border: "1px solid var(--cds-border-subtle)",
+                    backgroundColor: "var(--cds-layer-02)",
+                    fontSize: "0.75rem",
+                    fontFamily: "var(--cds-code-01-font-family, monospace)",
+                  }}
+                >
+                  {formatKey(key)}
+                </kbd>
+              ))}
             </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        ))}
+      </div>
+    </Modal>
   )
 }

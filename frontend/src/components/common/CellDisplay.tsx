@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils"
-
 interface CellDisplayProps {
   value: unknown
   className?: string
@@ -8,7 +6,7 @@ interface CellDisplayProps {
 export function CellDisplay({ value, className }: CellDisplayProps) {
   if (value === null || value === undefined) {
     return (
-      <span className={cn("italic text-muted-foreground", className)}>
+      <span className={className} style={{ fontStyle: "italic", opacity: 0.5 }}>
         NULL
       </span>
     )
@@ -16,7 +14,7 @@ export function CellDisplay({ value, className }: CellDisplayProps) {
 
   if (typeof value === "boolean") {
     return (
-      <span className={cn("font-mono", className)}>
+      <span className={className} style={{ fontFamily: "var(--cds-code-01-font-family, monospace)" }}>
         {value ? "true" : "false"}
       </span>
     )
@@ -24,7 +22,13 @@ export function CellDisplay({ value, className }: CellDisplayProps) {
 
   if (typeof value === "number") {
     return (
-      <span className={cn("font-mono tabular-nums", className)}>
+      <span
+        className={className}
+        style={{
+          fontFamily: "var(--cds-code-01-font-family, monospace)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
         {value.toLocaleString()}
       </span>
     )

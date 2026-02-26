@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router"
 import { SnapshotLayout } from "@/components/snapshot/SnapshotLayout"
-import { Layers } from "lucide-react"
+import { Layers } from "@carbon/react/icons"
 
 export function SnapshotsPage() {
   const navigate = useNavigate()
@@ -24,10 +24,17 @@ export function SnapshotsPage() {
 
   return (
     <SnapshotLayout onSelectTable={handleSelectTable} onSelectSnapshot={handleSelectSnapshot}>
-      <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-        <Layers className="mb-4 h-12 w-12" />
-        <p className="text-lg font-medium">Select a table</p>
-        <p className="text-sm">
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--cds-text-secondary)",
+      }}>
+        <Layers size={48} style={{ marginBottom: "1rem" }} />
+        <p style={{ fontSize: "1.125rem", fontWeight: 500 }}>Select a table</p>
+        <p style={{ fontSize: "0.875rem" }}>
           Browse the tree on the left or press Cmd+K to search
         </p>
       </div>

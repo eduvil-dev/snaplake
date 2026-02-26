@@ -2,10 +2,8 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { SnapshotLayout } from "@/components/snapshot/SnapshotLayout"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Table, Database, Calendar, Clock } from "lucide-react"
+import { Tile, Tag, SkeletonText, SkeletonPlaceholder } from "@carbon/react"
+import { DataTable, Db2Database, Calendar, Time } from "@carbon/react/icons"
 
 interface SnapshotResponse {
   id: string
@@ -67,46 +65,46 @@ export function SnapshotDetailPage() {
       selectedSnapshotId={snapshotId}
     >
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <SkeletonText heading width="30%" />
+          <SkeletonPlaceholder style={{ height: "8rem", width: "100%" }} />
+          <SkeletonPlaceholder style={{ height: "16rem", width: "100%" }} />
         </div>
       ) : snapshot ? (
-        <div className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <div>
-            <h2 className="text-lg font-semibold">{snapshot.datasourceName}</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>{snapshot.datasourceName}</h2>
+            <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
               {snapshot.snapshotDate} &middot;{" "}
               {snapshot.snapshotType.toLowerCase()}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Database className="h-4 w-4" />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+              <Db2Database size={16} />
               <span>{snapshot.datasourceName}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+              <Calendar size={16} />
               <span>{snapshot.snapshotDate}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+              <Time size={16} />
               <span>{snapshot.snapshotType.toLowerCase()}</span>
             </div>
-            <Badge variant="secondary">{snapshot.status}</Badge>
+            <Tag type="gray" size="sm">{snapshot.status}</Tag>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground">
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--cds-text-secondary)" }}>
               Tables ({snapshot.tables.length})
             </h3>
-            <div className="grid gap-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {snapshot.tables.map((t) => (
-                <Card
+                <Tile
                   key={`${t.schema}.${t.table}`}
-                  className="cursor-pointer transition-colors hover:bg-accent"
+                  style={{ cursor: "pointer" }}
                   onClick={() =>
                     navigate({
                       to: "/snapshots/$snapshotId/$schema/$table",
@@ -118,22 +116,22 @@ export function SnapshotDetailPage() {
                     })
                   }
                 >
-                  <CardContent className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
-                      <Table className="h-4 w-4 text-muted-foreground" />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <DataTable size={16} style={{ color: "var(--cds-text-secondary)" }} />
                       <div>
-                        <p className="text-sm font-medium">{t.table}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p style={{ fontSize: "0.875rem", fontWeight: 500 }}>{t.table}</p>
+                        <p style={{ fontSize: "0.75rem", color: "var(--cds-text-secondary)" }}>
                           {t.schema}
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
+                    <div style={{ display: "flex", gap: "1rem", fontSize: "0.75rem", color: "var(--cds-text-secondary)" }}>
                       <span>{t.rowCount.toLocaleString()} rows</span>
                       <span>{formatBytes(t.sizeBytes)}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </Tile>
               ))}
             </div>
           </div>

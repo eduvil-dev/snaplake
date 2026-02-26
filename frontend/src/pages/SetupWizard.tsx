@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
+import { ProgressIndicator, ProgressStep } from "@carbon/react"
 import { WelcomeStep } from "@/components/setup/WelcomeStep"
 import { AdminAccountStep } from "@/components/setup/AdminAccountStep"
 import { StorageStep } from "@/components/setup/StorageStep"
@@ -9,7 +10,6 @@ import type { DatasourceData } from "@/components/setup/DatasourceStep"
 import { CompleteStep } from "@/components/setup/CompleteStep"
 import { api } from "@/lib/api"
 import { setAuth } from "@/lib/auth"
-import { cn } from "@/lib/utils"
 
 const STEPS = ["Welcome", "Account", "Storage", "Datasource", "Complete"]
 
@@ -52,7 +52,6 @@ export function SetupWizard() {
     setError(null)
 
     try {
-      // Initialize the system
       await api.post("/api/setup/initialize", {
         adminUsername: adminData.username,
         adminPassword: adminData.password,
@@ -73,7 +72,6 @@ export function SetupWizard() {
           storageData.storageType === "S3" ? storageData.s3SecretKey : null,
       })
 
-      // Auto-login after setup
       const loginResult = await api.post<{ token: string; expiresAt: string }>(
         "/api/auth/login",
         {
@@ -83,7 +81,6 @@ export function SetupWizard() {
       )
       setAuth(loginResult.token, loginResult.expiresAt, adminData.username)
 
-      // Register first datasource if not skipped
       if (!datasourceData.skip && datasourceData.name) {
         await api.post("/api/datasources", {
           name: datasourceData.name,
@@ -102,7 +99,6 @@ export function SetupWizard() {
 
       navigate({ to: "/" })
     } catch (err) {
-      // If initialization succeeded but login failed, redirect to login
       try {
         const status = await api.get<{ initialized: boolean }>("/api/setup/status")
         if (status.initialized) {
@@ -121,23 +117,17 @@ export function SetupWizard() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
       <title>Setup - Snaplake</title>
-      <div className="w-full max-w-lg space-y-8">
-        {/* Progress indicator */}
-        <div className="flex justify-center gap-2">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "h-2 w-8 rounded-full transition-colors",
-                i <= step ? "bg-primary" : "bg-muted",
-              )}
-            />
-          ))}
+      <div style={{ width: "100%", maxWidth: "32rem" }}>
+        <div style={{ marginBottom: "2rem" }}>
+          <ProgressIndicator currentIndex={step} spaceEqually>
+            {STEPS.map((label) => (
+              <ProgressStep key={label} label={label} />
+            ))}
+          </ProgressIndicator>
         </div>
 
-        {/* Step content */}
         {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
         {step === 1 && (
           <AdminAccountStep

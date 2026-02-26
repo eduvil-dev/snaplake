@@ -1,14 +1,7 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectItem } from "@carbon/react"
 
 interface SnapshotResponse {
   id: string
@@ -97,85 +90,69 @@ export function CompareSelector({
   }, [leftSnapshot, rightSnapshot])
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="space-y-2">
-        <Label>Datasource</Label>
-        <Select
-          value={datasourceId ?? ""}
-          onValueChange={onDatasourceChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select datasource" />
-          </SelectTrigger>
-          <SelectContent>
-            {datasources?.map((ds) => (
-              <SelectItem key={ds.id} value={ds.id}>
-                {ds.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div style={{
+      display: "grid",
+      gap: "1rem",
+      gridTemplateColumns: "repeat(4, 1fr)",
+    }}>
+      <Select
+        id="compare-datasource"
+        labelText="Datasource"
+        value={datasourceId ?? ""}
+        onChange={(e) => onDatasourceChange(e.target.value)}
+      >
+        <SelectItem value="" text="Select datasource" />
+        {datasources?.map((ds) => (
+          <SelectItem key={ds.id} value={ds.id} text={ds.name} />
+        ))}
+      </Select>
 
-      <div className="space-y-2">
-        <Label>Left Snapshot</Label>
-        <Select
-          value={leftSnapshotId ?? ""}
-          onValueChange={onLeftChange}
-          disabled={!datasourceId}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select snapshot" />
-          </SelectTrigger>
-          <SelectContent>
-            {completedSnapshots.map((snap) => (
-              <SelectItem key={snap.id} value={snap.id}>
-                {formatSnapshotLabel(snap)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Select
+        id="compare-left-snapshot"
+        labelText="Left Snapshot"
+        value={leftSnapshotId ?? ""}
+        onChange={(e) => onLeftChange(e.target.value)}
+        disabled={!datasourceId}
+      >
+        <SelectItem value="" text="Select snapshot" />
+        {completedSnapshots.map((snap) => (
+          <SelectItem
+            key={snap.id}
+            value={snap.id}
+            text={formatSnapshotLabel(snap)}
+          />
+        ))}
+      </Select>
 
-      <div className="space-y-2">
-        <Label>Right Snapshot</Label>
-        <Select
-          value={rightSnapshotId ?? ""}
-          onValueChange={onRightChange}
-          disabled={!datasourceId}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select snapshot" />
-          </SelectTrigger>
-          <SelectContent>
-            {completedSnapshots.map((snap) => (
-              <SelectItem key={snap.id} value={snap.id}>
-                {formatSnapshotLabel(snap)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Select
+        id="compare-right-snapshot"
+        labelText="Right Snapshot"
+        value={rightSnapshotId ?? ""}
+        onChange={(e) => onRightChange(e.target.value)}
+        disabled={!datasourceId}
+      >
+        <SelectItem value="" text="Select snapshot" />
+        {completedSnapshots.map((snap) => (
+          <SelectItem
+            key={snap.id}
+            value={snap.id}
+            text={formatSnapshotLabel(snap)}
+          />
+        ))}
+      </Select>
 
-      <div className="space-y-2">
-        <Label>Table</Label>
-        <Select
-          value={tableName ?? ""}
-          onValueChange={onTableChange}
-          disabled={availableTables.length === 0}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select table" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableTables.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Select
+        id="compare-table"
+        labelText="Table"
+        value={tableName ?? ""}
+        onChange={(e) => onTableChange(e.target.value)}
+        disabled={availableTables.length === 0}
+      >
+        <SelectItem value="" text="Select table" />
+        {availableTables.map((t) => (
+          <SelectItem key={t} value={t} text={t} />
+        ))}
+      </Select>
     </div>
   )
 }

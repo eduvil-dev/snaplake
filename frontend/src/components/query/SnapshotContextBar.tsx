@@ -1,8 +1,8 @@
 import { useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
-import { Database, Plus } from "lucide-react"
+import { Button } from "@carbon/react"
+import { Db2Database, Add } from "@carbon/react/icons"
 import { SnapshotChip } from "./SnapshotChip"
 import {
   type SnapshotContextState,
@@ -63,14 +63,21 @@ export function SnapshotContextBar({
   )
 
   return (
-    <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
-      <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      borderBottom: "1px solid var(--cds-border-subtle)",
+      backgroundColor: "var(--cds-layer-01)",
+      padding: "0.5rem 1rem",
+    }}>
+      <Db2Database size={16} style={{ flexShrink: 0, color: "var(--cds-text-secondary)" }} />
       {context.entries.length === 0 ? (
-        <span className="text-sm text-muted-foreground">
+        <span style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
           No snapshots selected
         </span>
       ) : (
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.375rem" }}>
           {context.entries.map((entry, index) => (
             <SnapshotChip
               key={index}
@@ -83,12 +90,12 @@ export function SnapshotContextBar({
         </div>
       )}
       <Button
-        variant="ghost"
+        kind="ghost"
         size="sm"
-        className="ml-auto shrink-0"
+        renderIcon={Add}
+        style={{ marginLeft: "auto", flexShrink: 0 }}
         onClick={handleAdd}
       >
-        <Plus className="mr-1 h-3 w-3" />
         Add Snapshot
       </Button>
     </div>
