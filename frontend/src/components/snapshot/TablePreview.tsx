@@ -3,20 +3,14 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { DataTable, type Column } from "@/components/common/DataTable"
 import { CellDisplay } from "@/components/common/CellDisplay"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
+  TextInput,
+  Button,
+  SkeletonPlaceholder,
+  Modal,
+} from "@carbon/react"
+import { Filter, Terminal } from "@carbon/react/icons"
 import { exportToCsv, exportToJson } from "@/lib/export"
-import { Filter, SquareTerminal } from "lucide-react"
 import { useNavigate } from "@tanstack/react-router"
 
 interface QueryResult {
@@ -115,12 +109,13 @@ export function TablePreview({ snapshotId, tableName }: TablePreviewProps) {
   }
 
   return (
-    <div className="min-w-0 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{tableName}</h2>
+    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>{tableName}</h2>
         <Button
-          variant="outline"
+          kind="tertiary"
           size="sm"
+          renderIcon={Terminal}
           onClick={() => {
             navigate({
               to: "/query",
@@ -128,41 +123,50 @@ export function TablePreview({ snapshotId, tableName }: TablePreviewProps) {
             })
           }}
         >
-          <SquareTerminal className="mr-1 h-3 w-3" />
           Open in Query
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border p-4">
-        <div className="flex-1 space-y-2">
-          <Label className="text-xs">WHERE</Label>
-          <Input
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "flex-end",
+        gap: "1rem",
+        padding: "1rem",
+        border: "1px solid var(--cds-border-subtle)",
+      }}>
+        <div style={{ flex: 1 }}>
+          <TextInput
+            id="where-clause"
+            labelText="WHERE"
+            size="sm"
             value={whereClause}
             onChange={(e) => setWhereClause(e.target.value)}
             placeholder="column = 'value' AND ..."
-            className="font-mono text-sm"
+            style={{ fontFamily: "var(--cds-code-01-font-family, monospace)" }}
           />
         </div>
-        <div className="flex-1 space-y-2">
-          <Label className="text-xs">ORDER BY</Label>
-          <Input
+        <div style={{ flex: 1 }}>
+          <TextInput
+            id="orderby-clause"
+            labelText="ORDER BY"
+            size="sm"
             value={orderByClause}
             onChange={(e) => setOrderByClause(e.target.value)}
             placeholder="column ASC"
-            className="font-mono text-sm"
+            style={{ fontFamily: "var(--cds-code-01-font-family, monospace)" }}
           />
         </div>
-        <Button onClick={applyFilter} size="sm">
-          <Filter className="mr-1 h-3 w-3" />
+        <Button size="sm" renderIcon={Filter} onClick={applyFilter}>
           Apply
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-64 w-full" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <SkeletonPlaceholder style={{ height: "2rem", width: "100%" }} />
+          <SkeletonPlaceholder style={{ height: "16rem", width: "100%" }} />
         </div>
       ) : data ? (
         <DataTable
@@ -183,62 +187,62 @@ export function TablePreview({ snapshotId, tableName }: TablePreviewProps) {
         />
       ) : null}
 
-      {/* Row Detail Dialog */}
-      <Dialog
+      {/* Row Detail Modal */}
+      <Modal
         open={selectedRow !== null}
-        onOpenChange={(open) => !open && setSelectedRow(null)}
+        onRequestClose={() => setSelectedRow(null)}
+        modalHeading="Row Detail"
+        modalLabel={`Row #${selectedRow !== null ? page * PAGE_SIZE + selectedRow + 1 : ""}`}
+        passiveModal
+        size="sm"
       >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Row Detail</DialogTitle>
-            <DialogDescription>
-              Row #{selectedRow !== null ? page * PAGE_SIZE + selectedRow + 1 : ""}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRow !== null && data && (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-3 pr-4">
-                {data.columns.map((col, i) => (
-                  <div key={col.name} className="grid grid-cols-[140px_1fr] gap-2">
-                    <span className="text-sm font-medium text-muted-foreground truncate" title={col.name}>
-                      {col.name}
-                    </span>
-                    <div className="min-w-0 break-all text-sm">
-                      <CellDisplay value={data.rows[selectedRow][i]} />
-                    </div>
+        {selectedRow !== null && data && (
+          <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {data.columns.map((col, i) => (
+                <div key={col.name} style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
+                  <span style={{
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    color: "var(--cds-text-secondary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }} title={col.name}>
+                    {col.name}
+                  </span>
+                  <div style={{ minWidth: 0, wordBreak: "break-all", fontSize: "0.875rem" }}>
+                    <CellDisplay value={data.rows[selectedRow][i]} />
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </DialogContent>
-      </Dialog>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
 
-      {/* Cell Detail Dialog */}
-      <Dialog
+      {/* Cell Detail Modal */}
+      <Modal
         open={selectedCell !== null}
-        onOpenChange={(open) => !open && setSelectedCell(null)}
+        onRequestClose={() => setSelectedCell(null)}
+        modalHeading={selectedCell !== null && data ? data.columns[selectedCell.colIndex].name : ""}
+        modalLabel={selectedCell !== null && data ? data.columns[selectedCell.colIndex].type : ""}
+        passiveModal
+        size="sm"
       >
-        <DialogContent className="max-w-lg">
-          {selectedCell !== null && data && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {data.columns[selectedCell.colIndex].name}
-                </DialogTitle>
-                <DialogDescription>
-                  {data.columns[selectedCell.colIndex].type}
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="max-h-[60vh]">
-                <pre className="whitespace-pre-wrap break-all font-mono text-sm pr-4">
-                  {formatCellValue(data.rows[selectedCell.rowIndex][selectedCell.colIndex])}
-                </pre>
-              </ScrollArea>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+        {selectedCell !== null && data && (
+          <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+            <pre style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+              fontFamily: "var(--cds-code-01-font-family, monospace)",
+              fontSize: "0.875rem",
+            }}>
+              {formatCellValue(data.rows[selectedCell.rowIndex][selectedCell.colIndex])}
+            </pre>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

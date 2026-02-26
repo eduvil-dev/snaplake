@@ -1,17 +1,15 @@
 import { useState, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
+  TextInput,
+  NumberInput,
   Select,
-  SelectContent,
   SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Button,
+  InlineLoading,
+} from "@carbon/react"
+import { CheckmarkFilled, ErrorFilled } from "@carbon/react/icons"
 import { ScheduleInput } from "./ScheduleInput"
 import { api } from "@/lib/api"
-import { CheckCircle, Loader2, XCircle } from "lucide-react"
 
 export interface DatasourceFormData {
   name: string
@@ -114,123 +112,100 @@ export function DatasourceForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Basic Info */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Connection</h3>
-        <div className="space-y-2">
-          <Label htmlFor="ds-name">Name</Label>
-          <Input
-            id="ds-name"
-            value={data.name}
-            onChange={(e) => setData({ ...data, name: e.target.value })}
-            placeholder="production-db"
+    <form onSubmit={handleSubmit}>
+      {/* Connection */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Connection</h3>
+        <TextInput
+          id="ds-name"
+          labelText="Name"
+          value={data.name}
+          onChange={(e) => setData({ ...data, name: e.target.value })}
+          placeholder="production-db"
+          invalid={!!errors.name}
+          invalidText={errors.name}
+        />
+        <Select
+          id="ds-type"
+          labelText="Database Type"
+          value={data.type}
+          onChange={(e) => updatePort(e.target.value)}
+        >
+          <SelectItem value="POSTGRESQL" text="PostgreSQL" />
+          <SelectItem value="MYSQL" text="MySQL" />
+        </Select>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem" }}>
+          <TextInput
+            id="ds-host"
+            labelText="Host"
+            value={data.host}
+            onChange={(e) => setData({ ...data, host: e.target.value })}
+            placeholder="localhost"
+            invalid={!!errors.host}
+            invalidText={errors.host}
           />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Database Type</Label>
-          <Select value={data.type} onValueChange={updatePort}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="POSTGRESQL">PostgreSQL</SelectItem>
-              <SelectItem value="MYSQL">MySQL</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-2">
-            <Label htmlFor="ds-host">Host</Label>
-            <Input
-              id="ds-host"
-              value={data.host}
-              onChange={(e) => setData({ ...data, host: e.target.value })}
-              placeholder="localhost"
-            />
-            {errors.host && (
-              <p className="text-sm text-destructive">{errors.host}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ds-port">Port</Label>
-            <Input
-              id="ds-port"
-              value={data.port}
-              onChange={(e) => setData({ ...data, port: e.target.value })}
-            />
-            {errors.port && (
-              <p className="text-sm text-destructive">{errors.port}</p>
-            )}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="ds-database">Database</Label>
-          <Input
-            id="ds-database"
-            value={data.database}
-            onChange={(e) => setData({ ...data, database: e.target.value })}
-            placeholder="mydb"
-          />
-          {errors.database && (
-            <p className="text-sm text-destructive">{errors.database}</p>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ds-username">Username</Label>
-            <Input
-              id="ds-username"
-              value={data.username}
-              onChange={(e) => setData({ ...data, username: e.target.value })}
-            />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ds-password">Password</Label>
-            <Input
-              id="ds-password"
-              type="password"
-              value={data.password}
-              onChange={(e) => setData({ ...data, password: e.target.value })}
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="ds-schemas">Schemas (comma-separated)</Label>
-          <Input
-            id="ds-schemas"
-            value={data.schemas}
-            onChange={(e) => setData({ ...data, schemas: e.target.value })}
-            placeholder="public"
+          <TextInput
+            id="ds-port"
+            labelText="Port"
+            value={data.port}
+            onChange={(e) => setData({ ...data, port: e.target.value })}
+            invalid={!!errors.port}
+            invalidText={errors.port}
           />
         </div>
+        <TextInput
+          id="ds-database"
+          labelText="Database"
+          value={data.database}
+          onChange={(e) => setData({ ...data, database: e.target.value })}
+          placeholder="mydb"
+          invalid={!!errors.database}
+          invalidText={errors.database}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <TextInput
+            id="ds-username"
+            labelText="Username"
+            value={data.username}
+            onChange={(e) => setData({ ...data, username: e.target.value })}
+            invalid={!!errors.username}
+            invalidText={errors.username}
+          />
+          <TextInput
+            id="ds-password"
+            type="password"
+            labelText="Password"
+            value={data.password}
+            onChange={(e) => setData({ ...data, password: e.target.value })}
+          />
+        </div>
+        <TextInput
+          id="ds-schemas"
+          labelText="Schemas (comma-separated)"
+          value={data.schemas}
+          onChange={(e) => setData({ ...data, schemas: e.target.value })}
+          placeholder="public"
+        />
         {datasourceId && (
-          <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Button
               type="button"
-              variant="outline"
+              kind="tertiary"
+              size="sm"
               onClick={handleTest}
               disabled={testStatus === "testing"}
             >
-              {testStatus === "testing" && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
               Test Connection
             </Button>
+            {testStatus === "testing" && <InlineLoading description="Testing..." />}
             {testStatus === "success" && (
-              <span className="flex items-center gap-1 text-sm text-green-600">
-                <CheckCircle className="h-4 w-4" /> {testMessage}
+              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-success)" }}>
+                <CheckmarkFilled size={16} /> {testMessage}
               </span>
             )}
             {testStatus === "error" && (
-              <span className="flex items-center gap-1 text-sm text-destructive">
-                <XCircle className="h-4 w-4" /> {testMessage}
+              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-error)" }}>
+                <ErrorFilled size={16} /> {testMessage}
               </span>
             )}
           </div>
@@ -238,53 +213,46 @@ export function DatasourceForm({
       </div>
 
       {/* Schedule */}
-      <ScheduleInput
-        value={data.cronExpression}
-        onChange={handleScheduleChange}
-      />
+      <div style={{ marginBottom: "2rem" }}>
+        <ScheduleInput
+          value={data.cronExpression}
+          onChange={handleScheduleChange}
+        />
+      </div>
 
       {/* Retention */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Retention Policy</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ret-daily">Daily Snapshots to Keep</Label>
-            <Input
-              id="ret-daily"
-              type="number"
-              min={0}
-              value={data.retentionDaily}
-              onChange={(e) =>
-                setData({
-                  ...data,
-                  retentionDaily: parseInt(e.target.value, 10) || 0,
-                })
-              }
-            />
-            <p className="text-xs text-muted-foreground">0 = keep all</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ret-monthly">Monthly Snapshots to Keep</Label>
-            <Input
-              id="ret-monthly"
-              type="number"
-              min={0}
-              value={data.retentionMonthly}
-              onChange={(e) =>
-                setData({
-                  ...data,
-                  retentionMonthly: parseInt(e.target.value, 10) || 0,
-                })
-              }
-            />
-            <p className="text-xs text-muted-foreground">0 = keep all</p>
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Retention Policy</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <NumberInput
+            id="ret-daily"
+            label="Daily Snapshots to Keep"
+            min={0}
+            value={data.retentionDaily}
+            onChange={(_e: unknown, { value }: { value: number | string }) =>
+              setData({ ...data, retentionDaily: Number(value) || 0 })
+            }
+            helperText="0 = keep all"
+          />
+          <NumberInput
+            id="ret-monthly"
+            label="Monthly Snapshots to Keep"
+            min={0}
+            value={data.retentionMonthly}
+            onChange={(_e: unknown, { value }: { value: number | string }) =>
+              setData({ ...data, retentionMonthly: Number(value) || 0 })
+            }
+            helperText="0 = keep all"
+          />
         </div>
       </div>
 
-      <Button type="submit" className="h-11 w-full" disabled={isSubmitting}>
-        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {submitLabel}
+      <Button type="submit" style={{ width: "100%" }} disabled={isSubmitting}>
+        {isSubmitting ? (
+          <InlineLoading description="Saving..." />
+        ) : (
+          submitLabel
+        )}
       </Button>
     </form>
   )

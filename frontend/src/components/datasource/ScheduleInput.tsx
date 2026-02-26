@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import {
+  TextInput,
+  NumberInput,
   Select,
-  SelectContent,
   SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Button,
+} from "@carbon/react"
 import cronstrue from "cronstrue"
 
 interface ScheduleInputProps {
@@ -87,7 +89,7 @@ const DAYS_OF_WEEK = [
 
 export function ScheduleInput({ value, onChange }: ScheduleInputProps) {
   const initial = cronToSimple(value)
-  const [tabMode, setTabMode] = useState<"simple" | "advanced">("simple")
+  const [tabIndex, setTabIndex] = useState(0)
   const [simpleMode, setSimpleMode] = useState<SimpleMode>(initial.mode)
   const [hour, setHour] = useState(initial.hour)
   const [minute, setMinute] = useState(initial.minute)
@@ -96,129 +98,122 @@ export function ScheduleInput({ value, onChange }: ScheduleInputProps) {
   const [advancedCron, setAdvancedCron] = useState(value ?? "")
 
   useEffect(() => {
-    if (tabMode === "simple") {
+    if (tabIndex === 0) {
       onChange(simpleToCron(simpleMode, hour, minute, dayOfWeek, dayOfMonth))
     }
-  }, [simpleMode, hour, minute, dayOfWeek, dayOfMonth, tabMode, onChange])
+  }, [simpleMode, hour, minute, dayOfWeek, dayOfMonth, tabIndex, onChange])
 
   return (
-    <div className="space-y-4">
-      <Label>Schedule</Label>
-      <Tabs
-        value={tabMode}
-        onValueChange={(v) => setTabMode(v as "simple" | "advanced")}
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="simple">Simple</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced (Cron)</TabsTrigger>
-        </TabsList>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Schedule</h3>
+      <Tabs selectedIndex={tabIndex} onChange={({ selectedIndex }) => setTabIndex(selectedIndex)}>
+        <TabList aria-label="Schedule mode">
+          <Tab>Simple</Tab>
+          <Tab>Advanced (Cron)</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingTop: "1rem" }}>
+              <Select
+                id="schedule-mode"
+                labelText="Frequency"
+                value={simpleMode}
+                onChange={(e) => setSimpleMode(e.target.value as SimpleMode)}
+              >
+                <SelectItem value="none" text="No schedule (manual only)" />
+                <SelectItem value="daily" text="Daily" />
+                <SelectItem value="weekly" text="Weekly" />
+                <SelectItem value="monthly" text="Monthly" />
+              </Select>
 
-        <TabsContent value="simple" className="space-y-4 pt-4">
-          <Select
-            value={simpleMode}
-            onValueChange={(v) => setSimpleMode(v as SimpleMode)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No schedule (manual only)</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {simpleMode !== "none" && (
-            <div className="flex items-center gap-4">
-              {simpleMode === "weekly" && (
-                <div className="space-y-2">
-                  <Label>Day</Label>
-                  <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                    <SelectTrigger className="w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
+              {simpleMode !== "none" && (
+                <div style={{ display: "flex", alignItems: "flex-end", gap: "1rem" }}>
+                  {simpleMode === "weekly" && (
+                    <Select
+                      id="schedule-dow"
+                      labelText="Day"
+                      value={dayOfWeek}
+                      onChange={(e) => setDayOfWeek(e.target.value)}
+                    >
                       {DAYS_OF_WEEK.map((day) => (
-                        <SelectItem key={day.value} value={day.value}>
-                          {day.label}
-                        </SelectItem>
+                        <SelectItem key={day.value} value={day.value} text={day.label} />
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {simpleMode === "monthly" && (
-                <div className="space-y-2">
-                  <Label>Day of Month</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={28}
-                    value={dayOfMonth}
-                    onChange={(e) => setDayOfMonth(e.target.value)}
-                    className="w-24"
+                    </Select>
+                  )}
+                  {simpleMode === "monthly" && (
+                    <NumberInput
+                      id="schedule-dom"
+                      label="Day of Month"
+                      min={1}
+                      max={28}
+                      value={Number(dayOfMonth)}
+                      onChange={(_e: unknown, { value }: { value: number | string }) =>
+                        setDayOfMonth(String(value))
+                      }
+                    />
+                  )}
+                  <NumberInput
+                    id="schedule-hour"
+                    label="Hour"
+                    min={0}
+                    max={23}
+                    value={Number(hour)}
+                    onChange={(_e: unknown, { value }: { value: number | string }) =>
+                      setHour(String(value))
+                    }
+                  />
+                  <NumberInput
+                    id="schedule-minute"
+                    label="Minute"
+                    min={0}
+                    max={59}
+                    value={Number(minute)}
+                    onChange={(_e: unknown, { value }: { value: number | string }) =>
+                      setMinute(String(value))
+                    }
                   />
                 </div>
               )}
-              <div className="space-y-2">
-                <Label>Hour</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={23}
-                  value={hour}
-                  onChange={(e) => setHour(e.target.value)}
-                  className="w-20"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Minute</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={59}
-                  value={minute}
-                  onChange={(e) => setMinute(e.target.value)}
-                  className="w-20"
-                />
+            </div>
+          </TabPanel>
+
+          <TabPanel>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingTop: "1rem" }}>
+              <TextInput
+                id="cron-input"
+                labelText="Cron Expression"
+                value={advancedCron}
+                onChange={(e) => setAdvancedCron(e.target.value)}
+                placeholder="0 2 * * *"
+                style={{ fontFamily: "var(--cds-code-01-font-family, monospace)" }}
+              />
+              {advancedCron && (
+                <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                  {getCronDescription(advancedCron)}
+                </p>
+              )}
+              <div>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  onClick={() => onChange(advancedCron || null)}
+                >
+                  Apply
+                </Button>
               </div>
             </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Input
-              value={advancedCron}
-              onChange={(e) => setAdvancedCron(e.target.value)}
-              placeholder="0 2 * * *"
-              className="font-mono"
-            />
-            {advancedCron && (
-              <p className="text-sm text-muted-foreground">
-                {getCronDescription(advancedCron)}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="text-sm text-primary underline-offset-4 hover:underline"
-              onClick={() => {
-                onChange(advancedCron || null)
-              }}
-            >
-              Apply
-            </button>
-          </div>
-        </TabsContent>
+          </TabPanel>
+        </TabPanels>
       </Tabs>
 
       {value && (
-        <p className="text-sm text-muted-foreground">
-          Current: <code className="rounded bg-muted px-1 py-0.5">{value}</code>{" "}
-          &mdash; {getCronDescription(value)}
+        <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+          Current: <code style={{
+            padding: "0.125rem 0.25rem",
+            borderRadius: "0.25rem",
+            backgroundColor: "var(--cds-layer-02)",
+          }}>{value}</code>
+          {" "}&mdash; {getCronDescription(value)}
         </p>
       )}
     </div>

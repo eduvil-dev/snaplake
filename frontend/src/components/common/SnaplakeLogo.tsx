@@ -1,8 +1,8 @@
 interface SnaplakeLogoProps {
-  className?: string
+  size?: number
 }
 
-export function SnaplakeLogo({ className }: SnaplakeLogoProps) {
+export function SnaplakeLogo({ size = 24 }: SnaplakeLogoProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -12,7 +12,8 @@ export function SnaplakeLogo({ className }: SnaplakeLogoProps) {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      width={size}
+      height={size}
     >
       {/* Stacked snapshot layers */}
       <path d="M4 6h16" />

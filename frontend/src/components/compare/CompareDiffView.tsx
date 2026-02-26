@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
+  Button,
+  SkeletonPlaceholder,
   Table,
+  TableHead,
+  TableRow,
+  TableHeader,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+} from "@carbon/react"
+import { WarningAlt, Row, Column, Information } from "@carbon/react/icons"
 import { CellDisplay } from "@/components/common/CellDisplay"
-import { AlertCircle, Columns2, Rows3, Info } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface DiffColumn {
   name: string
@@ -59,10 +58,15 @@ export function CompareDiffView({
 }: CompareDiffViewProps) {
   const [viewMode, setViewMode] = useState<"unified" | "split">("unified")
   const [page, setPage] = useState(0)
+  const [prevKey, setPrevKey] = useState(
+    `${leftSnapshotId}-${rightSnapshotId}-${tableName}`,
+  )
 
-  useEffect(() => {
+  const currentKey = `${leftSnapshotId}-${rightSnapshotId}-${tableName}`
+  if (currentKey !== prevKey) {
+    setPrevKey(currentKey)
     setPage(0)
-  }, [leftSnapshotId, rightSnapshotId, tableName])
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: [
@@ -84,18 +88,25 @@ export function CompareDiffView({
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-48 w-full" />
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <SkeletonPlaceholder style={{ height: "2rem", width: "100%" }} />
+        <SkeletonPlaceholder style={{ height: "12rem", width: "100%" }} />
       </div>
     )
   }
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center gap-2 py-12 text-destructive">
-        <AlertCircle className="h-8 w-8" />
-        <p className="text-sm">Failed to load diff data</p>
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0.5rem",
+        padding: "3rem 0",
+        color: "var(--cds-support-error)",
+      }}>
+        <WarningAlt size={32} />
+        <p style={{ fontSize: "0.875rem" }}>Failed to load diff data</p>
       </div>
     )
   }
@@ -107,47 +118,56 @@ export function CompareDiffView({
   const endRow = Math.min((page + 1) * PAGE_SIZE, data.totalRows)
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-green-700">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem" }}>
+            <span style={{ fontWeight: 500, color: "var(--cds-support-success)" }}>
               +{data.summary.added}
             </span>
-            <span className="font-medium text-red-700">
+            <span style={{ fontWeight: 500, color: "var(--cds-support-error)" }}>
               -{data.summary.removed}
             </span>
             {data.summary.changed > 0 && (
-              <span className="font-medium text-amber-700">
+              <span style={{ fontWeight: 500, color: "var(--cds-support-warning)" }}>
                 ~{data.summary.changed}
               </span>
             )}
           </div>
           {data.primaryKeys.length === 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Info className="h-3 w-3" />
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              fontSize: "0.75rem",
+              color: "var(--cds-text-secondary)",
+            }}>
+              <Information size={12} />
               <span>No PK — changed rows cannot be detected</span>
             </div>
           )}
         </div>
-        <div className="flex gap-1 rounded-lg border p-0.5">
+        <div style={{
+          display: "flex",
+          gap: "0.25rem",
+          border: "1px solid var(--cds-border-subtle)",
+          padding: "0.125rem",
+        }}>
           <Button
-            variant={viewMode === "unified" ? "secondary" : "ghost"}
+            kind={viewMode === "unified" ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 gap-1.5 px-2.5"
+            renderIcon={Row}
             onClick={() => setViewMode("unified")}
           >
-            <Rows3 className="h-3.5 w-3.5" />
             Unified
           </Button>
           <Button
-            variant={viewMode === "split" ? "secondary" : "ghost"}
+            kind={viewMode === "split" ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 gap-1.5 px-2.5"
+            renderIcon={Column}
             onClick={() => setViewMode("split")}
           >
-            <Columns2 className="h-3.5 w-3.5" />
             Split
           </Button>
         </div>
@@ -155,7 +175,11 @@ export function CompareDiffView({
 
       {/* Diff Table */}
       {data.rows.length === 0 ? (
-        <div className="py-12 text-center text-muted-foreground">
+        <div style={{
+          padding: "3rem 0",
+          textAlign: "center",
+          color: "var(--cds-text-secondary)",
+        }}>
           No differences found
         </div>
       ) : viewMode === "unified" ? (
@@ -166,14 +190,14 @@ export function CompareDiffView({
 
       {/* Pagination */}
       {data.totalRows > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
             Showing {startRow}-{endRow} of {data.totalRows.toLocaleString()}{" "}
             changes
           </p>
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: "0.5rem" }}>
             <Button
-              variant="outline"
+              kind="tertiary"
               size="sm"
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
@@ -181,7 +205,7 @@ export function CompareDiffView({
               Previous
             </Button>
             <Button
-              variant="outline"
+              kind="tertiary"
               size="sm"
               disabled={page >= totalPages - 1}
               onClick={() => setPage(page + 1)}
@@ -203,33 +227,41 @@ function UnifiedView({
   rows: DiffRow[]
 }) {
   return (
-    <div className="overflow-auto rounded-xl border">
+    <div style={{ overflow: "auto", border: "1px solid var(--cds-border-subtle)" }}>
       <Table>
-        <TableHeader>
+        <TableHead>
           <TableRow>
-            <TableHead className="w-8" />
+            <TableHeader style={{ width: "2rem" }} />
             {columns.map((col) => (
-              <TableHead key={col.name}>
-                <div className="flex items-center gap-1">
+              <TableHeader key={col.name}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
                   <span>{col.name}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span style={{ fontSize: "0.75rem", color: "var(--cds-text-secondary)" }}>
                     {col.type}
                   </span>
                 </div>
-              </TableHead>
+              </TableHeader>
             ))}
           </TableRow>
-        </TableHeader>
+        </TableHead>
         <TableBody>
           {rows.flatMap((row, i) => {
             if (row.diffType === "ADDED") {
               return [
-                <TableRow key={i} className="border-l-4 border-l-green-500 bg-green-50">
-                  <TableCell className="w-8 text-center font-mono text-green-700">
+                <TableRow key={i} style={{
+                  borderLeft: "4px solid var(--cds-support-success)",
+                  backgroundColor: "rgba(36, 161, 72, 0.1)",
+                }}>
+                  <TableCell style={{
+                    width: "2rem",
+                    textAlign: "center",
+                    fontFamily: "monospace",
+                    color: "var(--cds-support-success)",
+                  }}>
                     +
                   </TableCell>
                   {row.values.map((cell, j) => (
-                    <TableCell key={j} className="max-w-xs truncate">
+                    <TableCell key={j} style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       <CellDisplay value={cell} />
                     </TableCell>
                   ))}
@@ -238,12 +270,20 @@ function UnifiedView({
             }
             if (row.diffType === "REMOVED") {
               return [
-                <TableRow key={i} className="border-l-4 border-l-red-500 bg-red-50">
-                  <TableCell className="w-8 text-center font-mono text-red-700">
+                <TableRow key={i} style={{
+                  borderLeft: "4px solid var(--cds-support-error)",
+                  backgroundColor: "rgba(218, 30, 40, 0.1)",
+                }}>
+                  <TableCell style={{
+                    width: "2rem",
+                    textAlign: "center",
+                    fontFamily: "monospace",
+                    color: "var(--cds-support-error)",
+                  }}>
                     -
                   </TableCell>
                   {row.values.map((cell, j) => (
-                    <TableCell key={j} className="max-w-xs truncate">
+                    <TableCell key={j} style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       <CellDisplay value={cell} />
                     </TableCell>
                   ))}
@@ -253,33 +293,55 @@ function UnifiedView({
             // CHANGED: two rows
             const changedSet = new Set(row.changedColumns)
             return [
-              <TableRow key={`${i}-left`} className="border-l-4 border-l-red-500 bg-red-50">
-                <TableCell className="w-8 text-center font-mono text-red-700">
+              <TableRow key={`${i}-left`} style={{
+                borderLeft: "4px solid var(--cds-support-error)",
+                backgroundColor: "rgba(218, 30, 40, 0.1)",
+              }}>
+                <TableCell style={{
+                  width: "2rem",
+                  textAlign: "center",
+                  fontFamily: "monospace",
+                  color: "var(--cds-support-error)",
+                }}>
                   -
                 </TableCell>
                 {row.left.map((cell, j) => (
                   <TableCell
                     key={j}
-                    className={cn(
-                      "max-w-xs truncate",
-                      changedSet.has(j) && "bg-red-100 font-medium",
-                    )}
+                    style={{
+                      maxWidth: "20rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      ...(changedSet.has(j) ? { backgroundColor: "rgba(218, 30, 40, 0.2)", fontWeight: 500 } : {}),
+                    }}
                   >
                     <CellDisplay value={cell} />
                   </TableCell>
                 ))}
               </TableRow>,
-              <TableRow key={`${i}-right`} className="border-l-4 border-l-green-500 bg-green-50">
-                <TableCell className="w-8 text-center font-mono text-green-700">
+              <TableRow key={`${i}-right`} style={{
+                borderLeft: "4px solid var(--cds-support-success)",
+                backgroundColor: "rgba(36, 161, 72, 0.1)",
+              }}>
+                <TableCell style={{
+                  width: "2rem",
+                  textAlign: "center",
+                  fontFamily: "monospace",
+                  color: "var(--cds-support-success)",
+                }}>
                   +
                 </TableCell>
                 {row.right.map((cell, j) => (
                   <TableCell
                     key={j}
-                    className={cn(
-                      "max-w-xs truncate",
-                      changedSet.has(j) && "bg-green-100 font-medium",
-                    )}
+                    style={{
+                      maxWidth: "20rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      ...(changedSet.has(j) ? { backgroundColor: "rgba(36, 161, 72, 0.2)", fontWeight: 500 } : {}),
+                    }}
                   >
                     <CellDisplay value={cell} />
                   </TableCell>
@@ -320,22 +382,22 @@ function SplitView({
   const header = (
     <TableRow>
       {columns.map((col) => (
-        <TableHead key={col.name}>
-          <div className="flex items-center gap-1">
+        <TableHeader key={col.name}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
             <span>{col.name}</span>
-            <span className="text-xs text-muted-foreground">{col.type}</span>
+            <span style={{ fontSize: "0.75rem", color: "var(--cds-text-secondary)" }}>{col.type}</span>
           </div>
-        </TableHead>
+        </TableHeader>
       ))}
     </TableRow>
   )
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
       {/* Left (old) */}
-      <div className="overflow-auto rounded-xl border">
+      <div style={{ overflow: "auto", border: "1px solid var(--cds-border-subtle)" }}>
         <Table>
-          <TableHeader>{header}</TableHeader>
+          <TableHead>{header}</TableHead>
           <TableBody>
             {leftRows.map((row, i) => {
               const isBlank = row.type === "removed" && row.values.every((v) => v === null)
@@ -343,19 +405,28 @@ function SplitView({
               return (
                 <TableRow
                   key={i}
-                  className={cn(
-                    isBlank && "bg-muted/30",
-                    !isBlank && !isChanged && "border-l-4 border-l-red-500 bg-red-50",
-                    isChanged && "border-l-4 border-l-amber-500 bg-red-50",
-                  )}
+                  style={{
+                    ...(isBlank ? { backgroundColor: "var(--cds-layer-02)" } : {}),
+                    ...(!isBlank && !isChanged ? {
+                      borderLeft: "4px solid var(--cds-support-error)",
+                      backgroundColor: "rgba(218, 30, 40, 0.1)",
+                    } : {}),
+                    ...(isChanged ? {
+                      borderLeft: "4px solid var(--cds-support-warning)",
+                      backgroundColor: "rgba(218, 30, 40, 0.1)",
+                    } : {}),
+                  }}
                 >
                   {row.values.map((cell, j) => (
                     <TableCell
                       key={j}
-                      className={cn(
-                        "max-w-xs truncate",
-                        isChanged && row.changedCols?.has(j) && "bg-red-100 font-medium",
-                      )}
+                      style={{
+                        maxWidth: "20rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        ...(isChanged && row.changedCols?.has(j) ? { backgroundColor: "rgba(218, 30, 40, 0.2)", fontWeight: 500 } : {}),
+                      }}
                     >
                       {!isBlank && <CellDisplay value={cell} />}
                     </TableCell>
@@ -368,9 +439,9 @@ function SplitView({
       </div>
 
       {/* Right (new) */}
-      <div className="overflow-auto rounded-xl border">
+      <div style={{ overflow: "auto", border: "1px solid var(--cds-border-subtle)" }}>
         <Table>
-          <TableHeader>{header}</TableHeader>
+          <TableHead>{header}</TableHead>
           <TableBody>
             {rightRows.map((row, i) => {
               const isBlank = row.type === "added" && row.values.every((v) => v === null)
@@ -378,19 +449,28 @@ function SplitView({
               return (
                 <TableRow
                   key={i}
-                  className={cn(
-                    isBlank && "bg-muted/30",
-                    !isBlank && !isChanged && "border-l-4 border-l-green-500 bg-green-50",
-                    isChanged && "border-l-4 border-l-amber-500 bg-green-50",
-                  )}
+                  style={{
+                    ...(isBlank ? { backgroundColor: "var(--cds-layer-02)" } : {}),
+                    ...(!isBlank && !isChanged ? {
+                      borderLeft: "4px solid var(--cds-support-success)",
+                      backgroundColor: "rgba(36, 161, 72, 0.1)",
+                    } : {}),
+                    ...(isChanged ? {
+                      borderLeft: "4px solid var(--cds-support-warning)",
+                      backgroundColor: "rgba(36, 161, 72, 0.1)",
+                    } : {}),
+                  }}
                 >
                   {row.values.map((cell, j) => (
                     <TableCell
                       key={j}
-                      className={cn(
-                        "max-w-xs truncate",
-                        isChanged && row.changedCols?.has(j) && "bg-green-100 font-medium",
-                      )}
+                      style={{
+                        maxWidth: "20rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        ...(isChanged && row.changedCols?.has(j) ? { backgroundColor: "rgba(36, 161, 72, 0.2)", fontWeight: 500 } : {}),
+                      }}
                     >
                       {!isBlank && <CellDisplay value={cell} />}
                     </TableCell>

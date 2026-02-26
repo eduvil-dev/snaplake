@@ -1,10 +1,13 @@
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  TextInput,
+  Button,
+  RadioButtonGroup,
+  RadioButton,
+  InlineLoading,
+} from "@carbon/react"
+import { CheckmarkFilled, ErrorFilled } from "@carbon/react/icons"
 import { api } from "@/lib/api"
-import { CheckCircle, Loader2, XCircle } from "lucide-react"
 
 export interface StorageData {
   storageType: "LOCAL" | "S3"
@@ -74,152 +77,109 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Storage Settings</h2>
-        <p className="text-muted-foreground">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Storage Settings</h2>
+        <p style={{ marginTop: "0.5rem", color: "var(--cds-text-secondary)" }}>
           Configure where Snaplake stores database snapshots.
         </p>
       </div>
 
-      <RadioGroup
-        value={data.storageType}
-        onValueChange={(value) =>
+      <RadioButtonGroup
+        legendText="Storage Type"
+        name="storageType"
+        valueSelected={data.storageType}
+        onChange={(value) =>
           onChange({ ...data, storageType: value as "LOCAL" | "S3" })
         }
-        className="space-y-3"
+        orientation="vertical"
       >
-        <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 hover:bg-accent">
-          <RadioGroupItem value="LOCAL" />
-          <div>
-            <p className="font-medium">Local Filesystem</p>
-            <p className="text-sm text-muted-foreground">
-              Store snapshots on the local disk
-            </p>
-          </div>
-        </label>
-        <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 hover:bg-accent">
-          <RadioGroupItem value="S3" />
-          <div>
-            <p className="font-medium">S3 Compatible Storage</p>
-            <p className="text-sm text-muted-foreground">
-              AWS S3, MinIO, or any S3-compatible storage
-            </p>
-          </div>
-        </label>
-      </RadioGroup>
+        <RadioButton labelText="Local Filesystem" value="LOCAL" id="storage-local" />
+        <RadioButton labelText="S3 Compatible Storage" value="S3" id="storage-s3" />
+      </RadioButtonGroup>
 
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {data.storageType === "LOCAL" ? (
-          <div className="space-y-2">
-            <Label htmlFor="localPath">Storage Path</Label>
-            <Input
-              id="localPath"
-              value={data.localPath}
-              onChange={(e) => onChange({ ...data, localPath: e.target.value })}
-              placeholder="/data/snaplake"
-            />
-            {errors.localPath && (
-              <p className="text-sm text-destructive">{errors.localPath}</p>
-            )}
-          </div>
+          <TextInput
+            id="localPath"
+            labelText="Storage Path"
+            value={data.localPath}
+            onChange={(e) => onChange({ ...data, localPath: e.target.value })}
+            placeholder="/data/snaplake"
+            invalid={!!errors.localPath}
+            invalidText={errors.localPath}
+          />
         ) : (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="s3Bucket">Bucket Name</Label>
-              <Input
-                id="s3Bucket"
-                value={data.s3Bucket}
-                onChange={(e) =>
-                  onChange({ ...data, s3Bucket: e.target.value })
-                }
-                placeholder="my-snaplake-bucket"
-              />
-              {errors.s3Bucket && (
-                <p className="text-sm text-destructive">{errors.s3Bucket}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="s3Region">Region</Label>
-              <Input
-                id="s3Region"
-                value={data.s3Region}
-                onChange={(e) =>
-                  onChange({ ...data, s3Region: e.target.value })
-                }
-                placeholder="us-east-1"
-              />
-              {errors.s3Region && (
-                <p className="text-sm text-destructive">{errors.s3Region}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="s3Endpoint">
-                Custom Endpoint{" "}
-                <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="s3Endpoint"
-                value={data.s3Endpoint}
-                onChange={(e) =>
-                  onChange({ ...data, s3Endpoint: e.target.value })
-                }
-                placeholder="https://minio.example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="s3AccessKey">Access Key</Label>
-              <Input
-                id="s3AccessKey"
-                value={data.s3AccessKey}
-                onChange={(e) =>
-                  onChange({ ...data, s3AccessKey: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="s3SecretKey">Secret Key</Label>
-              <Input
-                id="s3SecretKey"
-                type="password"
-                value={data.s3SecretKey}
-                onChange={(e) =>
-                  onChange({ ...data, s3SecretKey: e.target.value })
-                }
-              />
-            </div>
+            <TextInput
+              id="s3Bucket"
+              labelText="Bucket Name"
+              value={data.s3Bucket}
+              onChange={(e) => onChange({ ...data, s3Bucket: e.target.value })}
+              placeholder="my-snaplake-bucket"
+              invalid={!!errors.s3Bucket}
+              invalidText={errors.s3Bucket}
+            />
+            <TextInput
+              id="s3Region"
+              labelText="Region"
+              value={data.s3Region}
+              onChange={(e) => onChange({ ...data, s3Region: e.target.value })}
+              placeholder="us-east-1"
+              invalid={!!errors.s3Region}
+              invalidText={errors.s3Region}
+            />
+            <TextInput
+              id="s3Endpoint"
+              labelText="Custom Endpoint (optional)"
+              value={data.s3Endpoint}
+              onChange={(e) => onChange({ ...data, s3Endpoint: e.target.value })}
+              placeholder="https://minio.example.com"
+            />
+            <TextInput
+              id="s3AccessKey"
+              labelText="Access Key"
+              value={data.s3AccessKey}
+              onChange={(e) => onChange({ ...data, s3AccessKey: e.target.value })}
+            />
+            <TextInput
+              id="s3SecretKey"
+              type="password"
+              labelText="Secret Key"
+              value={data.s3SecretKey}
+              onChange={(e) => onChange({ ...data, s3SecretKey: e.target.value })}
+            />
           </>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <Button
-          variant="outline"
+          kind="tertiary"
+          size="sm"
           onClick={handleTest}
           disabled={testStatus === "testing"}
         >
-          {testStatus === "testing" && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
           Test Connection
         </Button>
+        {testStatus === "testing" && <InlineLoading description="Testing..." />}
         {testStatus === "success" && (
-          <span className="flex items-center gap-1 text-sm text-green-600">
-            <CheckCircle className="h-4 w-4" /> Connected
+          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-success)" }}>
+            <CheckmarkFilled size={16} /> Connected
           </span>
         )}
         {testStatus === "error" && (
-          <span className="flex items-center gap-1 text-sm text-destructive">
-            <XCircle className="h-4 w-4" /> Connection failed
+          <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-error)" }}>
+            <ErrorFilled size={16} /> Connection failed
           </span>
         )}
       </div>
 
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+      <div style={{ display: "flex", gap: "1rem" }}>
+        <Button kind="secondary" onClick={onBack} style={{ flex: 1 }}>
           Back
         </Button>
-        <Button onClick={handleNext} className="flex-1 h-11">
+        <Button onClick={handleNext} style={{ flex: 1 }}>
           Next
         </Button>
       </div>

@@ -1,14 +1,7 @@
 import { useRouterState, Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { Breadcrumb, BreadcrumbItem } from "@carbon/react"
 import { Fragment } from "react"
 
 const segmentLabels: Record<string, string> = {
@@ -61,7 +54,6 @@ export function AppBreadcrumb() {
   const segments =
     pathname === "/" ? [""] : pathname.replace(/\/$/, "").split("/").slice(1)
 
-  // Identify dynamic segment IDs for reactive queries
   const datasourceId =
     segments[0] === "datasources" && segments[1] && !segmentLabels[segments[1]]
       ? segments[1]
@@ -84,13 +76,11 @@ export function AppBreadcrumb() {
         ? "/"
         : "/" + segments.slice(0, i + 1).join("/")
 
-    // Datasource detail: show datasource name
     if (i > 0 && segments[0] === "datasources" && !segmentLabels[segment]) {
       entries.push({ label: datasourceName ?? segment, href })
       continue
     }
 
-    // Snapshot routes: /snapshots/$snapshotId/$schema/$table
     if (segments[0] === "snapshots" && i === 1) {
       entries.push({ label: snapshotLabel ?? segment, href })
       continue
@@ -113,45 +103,27 @@ export function AppBreadcrumb() {
       ? entries[entries.length - 1].label + " - Snaplake"
       : "Snaplake"
 
-  if (entries.length === 1) {
-    return (
-      <>
-        <title>{pageTitle}</title>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage>{entries[0].label}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </>
-    )
-  }
-
   return (
     <>
       <title>{pageTitle}</title>
-      <Breadcrumb>
-        <BreadcrumbList>
-          {entries.map((entry, index) => {
-            const isLast = index === entries.length - 1
-
-            return (
-              <Fragment key={index}>
-                {index > 0 && <BreadcrumbSeparator />}
-                <BreadcrumbItem>
-                  {isLast ? (
-                    <BreadcrumbPage>{entry.label}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink asChild>
-                      <Link to={entry.href}>{entry.label}</Link>
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </Fragment>
-            )
-          })}
-        </BreadcrumbList>
+      <Breadcrumb noTrailingSlash>
+        {entries.map((entry, index) => {
+          const isLast = index === entries.length - 1
+          return (
+            <Fragment key={index}>
+              <BreadcrumbItem
+                isCurrentPage={isLast}
+                href={isLast ? undefined : entry.href}
+              >
+                {isLast ? (
+                  entry.label
+                ) : (
+                  <Link to={entry.href}>{entry.label}</Link>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
+          )
+        })}
       </Breadcrumb>
     </>
   )

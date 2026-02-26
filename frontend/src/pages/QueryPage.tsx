@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query"
 import { useSearch } from "@tanstack/react-router"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, SkeletonPlaceholder } from "@carbon/react"
+import { Time, Play, TrashCan } from "@carbon/react/icons"
 import { QueryEditor } from "@/components/query/QueryEditor"
 import { QueryResult } from "@/components/query/QueryResult"
 import { SnapshotContextBar } from "@/components/query/SnapshotContextBar"
@@ -18,7 +18,6 @@ import {
   clearQueryHistory,
   type QueryHistoryEntry,
 } from "@/lib/query-history"
-import { Clock, Loader2, Play, Trash2 } from "lucide-react"
 
 interface Column {
   name: string
@@ -109,7 +108,6 @@ export function QueryPage() {
       for (const [tableName, columns] of Object.entries(data.tables)) {
         const columnNames = columns.map((c) => c.name)
         tables[`${alias}.${tableName}`] = columnNames
-        // 단일 스냅샷이면 alias 없이도 접근 가능
         if (validEntries.length === 1) {
           tables[tableName] = columnNames
         }
@@ -118,7 +116,6 @@ export function QueryPage() {
     return Object.keys(tables).length > 0 ? tables : undefined
   }, [validEntries, schemaData])
 
-  // ref로 최신 sqlText를 항상 참조 (CodeMirror 키맵에서의 stale closure 방지)
   const sqlTextRef = useRef(sqlText)
   useEffect(() => {
     sqlTextRef.current = sqlText
@@ -174,7 +171,6 @@ export function QueryPage() {
     executeMutation.mutate({ sql: query, offset: 0 })
   }, [executeMutation])
 
-  // 페이지 레벨 키보드 단축키
   const handleExecuteRef = useRef(handleExecute)
   useEffect(() => {
     handleExecuteRef.current = handleExecute
@@ -182,15 +178,11 @@ export function QueryPage() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Cmd+Enter / Ctrl+Enter: 쿼리 실행 (에디터 밖에서도 동작)
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        // CodeMirror 에디터 내부에서는 CM6 keymap이 처리
         if ((e.target as Element)?.closest(".cm-editor")) return
         e.preventDefault()
         handleExecuteRef.current()
       }
-
-      // Escape: 히스토리 패널 닫기
       if (e.key === "Escape") {
         setShowHistory(false)
       }
@@ -216,71 +208,94 @@ export function QueryPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] -m-6 flex-col">
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "calc(100vh - 3rem)",
+      margin: "-1.5rem",
+    }}>
       {/* Context Bar */}
       <SnapshotContextBar context={context} onContextChange={setContext} />
 
       {/* Editor area */}
-      <div
-        className="flex shrink-0 flex-col border-b"
-        style={{ height: "40%" }}
-      >
-        <div className="flex items-center justify-between border-b px-4 py-2">
-          <h1 className="text-lg font-semibold">SQL Query</h1>
-          <div className="flex items-center gap-2">
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        height: "40%",
+        borderBottom: "1px solid var(--cds-border-subtle)",
+      }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid var(--cds-border-subtle)",
+          padding: "0.5rem 1rem",
+        }}>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 600 }}>SQL Query</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <Button
-              variant="ghost"
+              kind="ghost"
               size="sm"
+              renderIcon={Time}
               onClick={() => setShowHistory(!showHistory)}
             >
-              <Clock className="mr-1 h-3 w-3" />
               History
             </Button>
             <Button
+              size="sm"
+              renderIcon={Play}
               onClick={handleExecute}
               disabled={executeMutation.isPending || !sqlText.trim()}
-              size="sm"
-              title="Execute query (⌘Enter)"
             >
-              {executeMutation.isPending ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Play className="mr-1 h-3 w-3" />
-              )}
-              Execute
+              {executeMutation.isPending ? "Executing..." : "Execute"}
             </Button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div style={{ flex: 1, overflow: "hidden" }}>
           {showHistory ? (
-            <div className="h-full overflow-auto p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-medium">Query History</h3>
+            <div style={{ height: "100%", overflowY: "auto", padding: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <h3 style={{ fontWeight: 500 }}>Query History</h3>
                 <Button
-                  variant="ghost"
+                  kind="ghost"
                   size="sm"
+                  renderIcon={TrashCan}
                   onClick={handleClearHistory}
                 >
-                  <Trash2 className="mr-1 h-3 w-3" />
                   Clear
                 </Button>
               </div>
               {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
                   No queries yet.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {history.map((entry, i) => (
                     <button
                       key={i}
-                      className="w-full rounded-lg border p-3 text-left hover:bg-accent"
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        textAlign: "left",
+                        border: "1px solid var(--cds-border-subtle)",
+                        backgroundColor: "transparent",
+                        cursor: "pointer",
+                      }}
                       onClick={() => handleHistorySelect(entry)}
                     >
-                      <code className="block truncate text-sm">
+                      <code style={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: "0.875rem",
+                        fontFamily: "var(--cds-code-01-font-family, monospace)",
+                      }}>
                         {entry.sql}
                       </code>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "var(--cds-text-secondary)" }}>
                         {new Date(entry.executedAt).toLocaleString()} &middot;{" "}
                         {entry.rowCount} rows &middot; {entry.durationMs}ms
                       </p>
@@ -301,16 +316,20 @@ export function QueryPage() {
       </div>
 
       {/* Results area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "1.5rem" }}>
         {executeMutation.isPending ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-64 w-full" />
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <SkeletonPlaceholder style={{ height: "2rem", width: "100%" }} />
+            <SkeletonPlaceholder style={{ height: "16rem", width: "100%" }} />
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4">
-            <p className="font-medium text-destructive">Query Error</p>
-            <p className="mt-1 text-sm text-destructive/80">{error}</p>
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--cds-support-error)",
+            backgroundColor: "var(--cds-notification-error-background-color, rgba(218, 30, 40, 0.1))",
+          }}>
+            <p style={{ fontWeight: 500, color: "var(--cds-support-error)" }}>Query Error</p>
+            <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-error)", opacity: 0.8 }}>{error}</p>
           </div>
         ) : result ? (
           <QueryResult
@@ -323,7 +342,13 @@ export function QueryPage() {
             executionTime={executionTime}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
+          <div style={{
+            display: "flex",
+            height: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--cds-text-secondary)",
+          }}>
             <p>Execute a query to see results</p>
           </div>
         )}

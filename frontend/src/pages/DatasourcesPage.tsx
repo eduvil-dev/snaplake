@@ -2,27 +2,18 @@ import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Button,
+  Tile,
+  Tag,
+  SkeletonPlaceholder,
+  Modal,
+} from "@carbon/react"
 import {
   DatasourceForm,
   type DatasourceFormData,
 } from "@/components/datasource/DatasourceForm"
-import { AlertCircle, Database, Plus } from "lucide-react"
+import { Db2Database, Add, WarningAlt } from "@carbon/react/icons"
 import cronstrue from "cronstrue"
 
 interface DatasourceResponse {
@@ -86,98 +77,105 @@ export function DatasourcesPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Datasources</h1>
-          <p className="text-muted-foreground">
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Datasources</h1>
+          <p style={{ color: "var(--cds-text-secondary)" }}>
             Manage database connections and snapshot schedules
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button renderIcon={Add} onClick={() => setShowCreate(true)}>
           Add Datasource
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-40" />
+            <SkeletonPlaceholder key={i} style={{ height: "10rem", width: "100%" }} />
           ))}
         </div>
       ) : !datasources?.length ? (
-        <Card>
-          <CardContent className="flex flex-col items-center py-16">
-            <Database className="mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">No datasources yet</p>
-            <p className="mb-6 text-muted-foreground">
+        <Tile>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4rem 0" }}>
+            <Db2Database size={48} style={{ color: "var(--cds-text-secondary)", marginBottom: "1rem" }} />
+            <p style={{ fontSize: "1.125rem", fontWeight: 500 }}>No datasources yet</p>
+            <p style={{ color: "var(--cds-text-secondary)", marginBottom: "1.5rem" }}>
               Add your first database connection to start taking snapshots.
             </p>
-            <Button onClick={() => setShowCreate(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button renderIcon={Add} onClick={() => setShowCreate(true)}>
               Add Datasource
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </Tile>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
           {datasources.map((ds) => (
-            <Card
+            <Tile
               key={ds.id}
-              className="cursor-pointer transition-colors hover:bg-accent/50"
+              style={{ cursor: "pointer" }}
               onClick={() =>
                 navigate({ to: "/datasources/$id", params: { id: ds.id } })
               }
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-base">{ds.name}</CardTitle>
-                  <Badge variant={ds.enabled ? "default" : "secondary"}>
-                    {ds.enabled ? "Active" : "Disabled"}
-                  </Badge>
-                </div>
-                <CardDescription>
-                  {ds.type} &middot; {ds.host}:{ds.port}/{ds.database}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Schedule:</span>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <p style={{ fontSize: "1rem", fontWeight: 600 }}>{ds.name}</p>
+                <Tag type={ds.enabled ? "green" : "gray"} size="sm">
+                  {ds.enabled ? "Active" : "Disabled"}
+                </Tag>
+              </div>
+              <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)", marginBottom: "1rem" }}>
+                {ds.type} &middot; {ds.host}:{ds.port}/{ds.database}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                <div>
+                  <span>Schedule: </span>
                   <span>{getCronLabel(ds.cronExpression)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Schemas:</span>
+                <div>
+                  <span>Schemas: </span>
                   <span>{ds.schemas.join(", ")}</span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Tile>
           ))}
         </div>
       )}
 
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Datasource</DialogTitle>
-          </DialogHeader>
-          {createMutation.isError && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {createMutation.error instanceof Error
-                ? createMutation.error.message
-                : "Failed to create datasource"}
-            </div>
-          )}
-          <DatasourceForm
-            onSubmit={async (data) => {
-              await createMutation.mutateAsync(data)
-            }}
-            submitLabel="Create Datasource"
-            isSubmitting={createMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={showCreate}
+        onRequestClose={() => setShowCreate(false)}
+        modalHeading="Add Datasource"
+        passiveModal
+        size="md"
+      >
+        {createMutation.isError && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.75rem",
+            marginBottom: "1rem",
+            fontSize: "0.875rem",
+            color: "var(--cds-support-error)",
+            border: "1px solid var(--cds-support-error)",
+            backgroundColor: "var(--cds-notification-error-background-color, rgba(218, 30, 40, 0.1))",
+          }}>
+            <WarningAlt size={16} style={{ flexShrink: 0 }} />
+            {createMutation.error instanceof Error
+              ? createMutation.error.message
+              : "Failed to create datasource"}
+          </div>
+        )}
+        <DatasourceForm
+          onSubmit={async (data) => {
+            await createMutation.mutateAsync(data)
+          }}
+          submitLabel="Create Datasource"
+          isSubmitting={createMutation.isPending}
+        />
+      </Modal>
     </div>
   )
 }

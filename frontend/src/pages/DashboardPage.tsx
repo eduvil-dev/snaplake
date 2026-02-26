@@ -1,24 +1,15 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, ClickableTile, Tag, SkeletonText, SkeletonPlaceholder } from "@carbon/react"
 import { useNavigate } from "@tanstack/react-router"
 import {
-  Database,
+  Db2Database,
   Layers,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  Plus,
-} from "lucide-react"
+  Time,
+  WarningAlt,
+  CheckmarkFilled,
+  Add,
+} from "@carbon/react/icons"
 
 interface DatasourceResponse {
   id: string
@@ -69,157 +60,156 @@ export function DashboardPage() {
     snapshots?.filter((s) => s.status === "FAILED").length ?? 0
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Dashboard</h1>
+          <p style={{ color: "var(--cds-text-secondary)" }}>
             Overview of your database snapshots
           </p>
         </div>
-        <Button onClick={() => navigate({ to: "/datasources" })}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button renderIcon={Add} onClick={() => navigate({ to: "/datasources" })}>
           Add Datasource
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         <SummaryCard
           title="Datasources"
           value={dsLoading ? null : String(activeDatasources)}
           description={`${scheduledDatasources} scheduled`}
-          icon={<Database className="h-4 w-4 text-muted-foreground" />}
+          icon={<Db2Database size={16} />}
           onClick={() => navigate({ to: "/datasources" })}
         />
         <SummaryCard
           title="Total Snapshots"
           value={snapLoading ? null : String(snapshots?.length ?? 0)}
           description={`${completedSnapshots} completed`}
-          icon={<Layers className="h-4 w-4 text-muted-foreground" />}
+          icon={<Layers size={16} />}
           onClick={() => navigate({ to: "/snapshots" })}
         />
         <SummaryCard
           title="Scheduled"
           value={dsLoading ? null : String(scheduledDatasources)}
           description="Active schedules"
-          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+          icon={<Time size={16} />}
           onClick={() => navigate({ to: "/datasources" })}
         />
         <SummaryCard
           title="Failed"
           value={snapLoading ? null : String(failedSnapshots)}
           description="Snapshots with errors"
-          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
+          icon={<WarningAlt size={16} />}
           onClick={() => navigate({ to: "/snapshots" })}
         />
       </div>
 
       {/* Recent Snapshots */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Snapshots</CardTitle>
-          <CardDescription>Last 10 snapshot operations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {snapLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : !recentSnapshots?.length ? (
-            <p className="py-8 text-center text-muted-foreground">
-              No snapshots yet. Trigger one from a datasource.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {recentSnapshots.map((snapshot) => (
-                <div
-                  key={snapshot.id}
-                  className="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-accent"
-                  onClick={() =>
-                    navigate({
-                      to: "/snapshots/$snapshotId",
-                      params: { snapshotId: snapshot.id },
-                    })
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <StatusIcon status={snapshot.status} />
-                    <div>
-                      <p className="font-medium">{snapshot.datasourceName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {snapshot.snapshotType} &middot;{" "}
-                        {snapshot.snapshotDate} &middot;{" "}
-                        {snapshot.tables.length} tables
-                      </p>
-                    </div>
+      <section>
+        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>Recent Snapshots</h2>
+        <p style={{ color: "var(--cds-text-secondary)", fontSize: "0.875rem", marginBottom: "1rem" }}>
+          Last 10 snapshot operations
+        </p>
+        {snapLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonPlaceholder key={i} style={{ height: "3rem", width: "100%" }} />
+            ))}
+          </div>
+        ) : !recentSnapshots?.length ? (
+          <p style={{ padding: "2rem 0", textAlign: "center", color: "var(--cds-text-secondary)" }}>
+            No snapshots yet. Trigger one from a datasource.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {recentSnapshots.map((snapshot) => (
+              <div
+                key={snapshot.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid var(--cds-border-subtle)",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  navigate({
+                    to: "/snapshots/$snapshotId",
+                    params: { snapshotId: snapshot.id },
+                  })
+                }
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <StatusIcon status={snapshot.status} />
+                  <div>
+                    <p style={{ fontWeight: 500 }}>{snapshot.datasourceName}</p>
+                    <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                      {snapshot.snapshotType} &middot;{" "}
+                      {snapshot.snapshotDate} &middot;{" "}
+                      {snapshot.tables.length} tables
+                    </p>
                   </div>
-                  <Badge
-                    variant={
-                      snapshot.status === "COMPLETED"
-                        ? "default"
-                        : snapshot.status === "FAILED"
-                          ? "destructive"
-                          : "secondary"
-                    }
-                  >
-                    {snapshot.status}
-                  </Badge>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <SnapshotStatusTag status={snapshot.status} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Datasource Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Datasources</CardTitle>
-          <CardDescription>Connection status overview</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {dsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : !datasources?.length ? (
-            <p className="py-8 text-center text-muted-foreground">
-              No datasources registered yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {datasources.map((ds) => (
-                <div
-                  key={ds.id}
-                  className="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-accent"
-                  onClick={() =>
-                    navigate({ to: "/datasources/$id", params: { id: ds.id } })
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <Database className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{ds.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {ds.type}
-                        {ds.cronExpression && ` \u00b7 ${ds.cronExpression}`}
-                      </p>
-                    </div>
+      <section>
+        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>Datasources</h2>
+        <p style={{ color: "var(--cds-text-secondary)", fontSize: "0.875rem", marginBottom: "1rem" }}>
+          Connection status overview
+        </p>
+        {dsLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonPlaceholder key={i} style={{ height: "3rem", width: "100%" }} />
+            ))}
+          </div>
+        ) : !datasources?.length ? (
+          <p style={{ padding: "2rem 0", textAlign: "center", color: "var(--cds-text-secondary)" }}>
+            No datasources registered yet.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {datasources.map((ds) => (
+              <div
+                key={ds.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid var(--cds-border-subtle)",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  navigate({ to: "/datasources/$id", params: { id: ds.id } })
+                }
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <Db2Database size={16} style={{ color: "var(--cds-text-secondary)" }} />
+                  <div>
+                    <p style={{ fontWeight: 500 }}>{ds.name}</p>
+                    <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                      {ds.type}
+                      {ds.cronExpression && ` \u00b7 ${ds.cronExpression}`}
+                    </p>
                   </div>
-                  <Badge variant={ds.enabled ? "default" : "secondary"}>
-                    {ds.enabled ? "Active" : "Disabled"}
-                  </Badge>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Tag type={ds.enabled ? "green" : "gray"} size="sm">
+                  {ds.enabled ? "Active" : "Disabled"}
+                </Tag>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
@@ -238,32 +228,36 @@ function SummaryCard({
   onClick?: () => void
 }) {
   return (
-    <Card
-      className={onClick ? "cursor-pointer hover:bg-accent/50 transition-colors" : undefined}
-      onClick={onClick}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        {value === null ? (
-          <Skeleton className="h-8 w-16" />
-        ) : (
-          <div className="text-2xl font-bold">{value}</div>
-        )}
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
+    <ClickableTile onClick={onClick ?? (() => {})}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+        <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--cds-text-secondary)" }}>{title}</span>
+        <span style={{ color: "var(--cds-text-secondary)" }}>{icon}</span>
+      </div>
+      {value === null ? (
+        <SkeletonText heading width="40%" />
+      ) : (
+        <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{value}</div>
+      )}
+      <p style={{ fontSize: "0.75rem", color: "var(--cds-text-secondary)", marginTop: "0.25rem" }}>{description}</p>
+    </ClickableTile>
   )
 }
 
 function StatusIcon({ status }: { status: string }) {
   if (status === "COMPLETED") {
-    return <CheckCircle className="h-4 w-4 text-green-600" />
+    return <CheckmarkFilled size={16} style={{ color: "var(--cds-support-success)" }} />
   }
   if (status === "FAILED") {
-    return <AlertCircle className="h-4 w-4 text-destructive" />
+    return <WarningAlt size={16} style={{ color: "var(--cds-support-error)" }} />
   }
-  return <Clock className="h-4 w-4 text-muted-foreground" />
+  return <Time size={16} style={{ color: "var(--cds-text-secondary)" }} />
+}
+
+function SnapshotStatusTag({ status }: { status: string }) {
+  const type = status === "COMPLETED" ? "green" : status === "FAILED" ? "red" : "gray"
+  return (
+    <Tag type={type} size="sm">
+      {status}
+    </Tag>
+  )
 }

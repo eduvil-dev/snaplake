@@ -1,29 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Input } from "@/components/ui/input"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog"
+import { Search, Modal, TextInput } from "@carbon/react"
 import {
   ChevronDown,
   ChevronRight,
-  Database,
+  Db2Database,
   Folder,
-  Table,
-  Search,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+  DataTable,
+} from "@carbon/react/icons"
 
 interface SnapshotResponse {
   id: string
@@ -55,13 +40,13 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const { data: snapshots } = useQuery({
     queryKey: ["snapshots"],
     queryFn: () => api.get<SnapshotResponse[]>("/api/snapshots"),
   })
 
-  // Build tree from snapshots
   const tree = useMemo(() => {
     if (!snapshots) return []
 
@@ -125,9 +110,10 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
     return nodes
   }, [snapshots])
 
-  // Auto-expand tree to selected item on mount / URL change
-  useEffect(() => {
-    if (!selectedSnapshotId || tree.length === 0) return
+  const [prevExpansionKey, setPrevExpansionKey] = useState("")
+  const expansionKey = `${selectedSnapshotId}-${selectedTable}-${tree.length}`
+  if (expansionKey !== prevExpansionKey && selectedSnapshotId && tree.length > 0) {
+    setPrevExpansionKey(expansionKey)
 
     const paths: string[] = []
     for (let di = 0; di < tree.length; di++) {
@@ -161,9 +147,8 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
         return next
       })
     }
-  }, [tree, selectedSnapshotId, selectedTable])
+  }
 
-  // Keyboard shortcut for search
   const handleKeydown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault()
@@ -188,7 +173,6 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
     })
   }
 
-  // Flat list of all tables for search
   const allTables = useMemo(() => {
     const result: { snapshotId: string; tableName: string; label: string }[] = []
     if (!snapshots) return result
@@ -210,6 +194,12 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
     return result
   }, [snapshots])
 
+  const filteredSearchResults = useMemo(() => {
+    if (!searchQuery) return allTables
+    const q = searchQuery.toLowerCase()
+    return allTables.filter((item) => item.label.toLowerCase().includes(q))
+  }, [allTables, searchQuery])
+
   function renderNode(node: TreeNode, path: string) {
     const isExpanded = expandedNodes.has(path)
     const hasChildren = node.children && node.children.length > 0
@@ -229,26 +219,36 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
 
     if (!matchesFilter && !childrenMatchFilter) return null
 
+    const isSelected =
+      node.type === "table" &&
+      node.snapshotId === selectedSnapshotId &&
+      node.tableName === selectedTable
+
     const icon =
       node.type === "datasource" ? (
-        <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Db2Database size={16} style={{ flexShrink: 0, color: "var(--cds-text-secondary)" }} />
       ) : node.type === "snapshotType" || node.type === "date" ? (
-        <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Folder size={16} style={{ flexShrink: 0, color: "var(--cds-text-secondary)" }} />
       ) : (
-        <Table className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <DataTable size={16} style={{ flexShrink: 0, color: "var(--cds-text-secondary)" }} />
       )
 
     return (
       <div key={path}>
         <button
-          className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-accent",
-            node.type === "table" && "cursor-pointer",
-            node.type === "table" &&
-              node.snapshotId === selectedSnapshotId &&
-              node.tableName === selectedTable &&
-              "bg-accent font-medium",
-          )}
+          style={{
+            display: "flex",
+            width: "100%",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.375rem 0.5rem",
+            fontSize: "0.875rem",
+            border: "none",
+            backgroundColor: isSelected ? "var(--cds-layer-selected)" : "transparent",
+            fontWeight: isSelected ? 500 : "normal",
+            cursor: node.type === "table" ? "pointer" : "default",
+            textAlign: "left",
+          }}
           onClick={() => {
             if (node.type === "table" && node.snapshotId && node.tableName) {
               onSelectTable(node.snapshotId, node.tableName)
@@ -262,18 +262,18 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
         >
           {hasChildren ? (
             isExpanded ? (
-              <ChevronDown className="h-3 w-3 shrink-0" />
+              <ChevronDown size={12} style={{ flexShrink: 0 }} />
             ) : (
-              <ChevronRight className="h-3 w-3 shrink-0" />
+              <ChevronRight size={12} style={{ flexShrink: 0 }} />
             )
           ) : (
-            <span className="w-3" />
+            <span style={{ width: "12px" }} />
           )}
           {icon}
-          <span className="truncate">{node.label}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.label}</span>
         </button>
         {isExpanded && node.children && (
-          <div className="ml-4">
+          <div style={{ marginLeft: "1rem" }}>
             {node.children.map((child, i) =>
               renderNode(child, `${path}/${i}`),
             )}
@@ -284,56 +284,86 @@ export function SidePanel({ onSelectTable, onSelectSnapshot, selectedSnapshotId,
   }
 
   return (
-    <div className="flex h-full flex-col border-r">
-      <div className="flex items-center gap-2 border-b p-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Filter... (Cmd+K)"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="pl-8"
-            onFocus={() => {
-              // Don't open the dialog, just use the inline filter
-            }}
-          />
-        </div>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      borderRight: "1px solid var(--cds-border-subtle)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: "1px solid var(--cds-border-subtle)", padding: "0.75rem" }}>
+        <Search
+          size="sm"
+          placeholder="Filter... (Cmd+K)"
+          labelText="Filter"
+          value={filter}
+          onChange={(e) => setFilter(e.target?.value ?? "")}
+        />
       </div>
-      <ScrollArea className="flex-1 p-2">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0.5rem" }}>
         {tree.length === 0 ? (
-          <p className="p-4 text-center text-sm text-muted-foreground">
+          <p style={{ padding: "1rem", textAlign: "center", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
             No snapshots available
           </p>
         ) : (
           tree.map((node, i) => renderNode(node, String(i)))
         )}
-      </ScrollArea>
+      </div>
 
       {/* Cmd+K Search Dialog */}
-      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="max-w-lg p-0">
-          <Command>
-            <CommandInput placeholder="Search tables..." />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              <CommandGroup heading="Tables">
-                {allTables.map((item, i) => (
-                  <CommandItem
-                    key={i}
-                    onSelect={() => {
-                      onSelectTable(item.snapshotId, item.tableName)
-                      setSearchOpen(false)
-                    }}
-                  >
-                    <Table className="mr-2 h-4 w-4" />
-                    {item.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={searchOpen}
+        onRequestClose={() => {
+          setSearchOpen(false)
+          setSearchQuery("")
+        }}
+        modalHeading="Search Tables"
+        passiveModal
+        size="sm"
+      >
+        <div style={{ marginBottom: "1rem" }}>
+          <TextInput
+            id="table-search-input"
+            labelText="Search"
+            placeholder="Search tables..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div style={{ maxHeight: "20rem", overflowY: "auto" }}>
+          {filteredSearchResults.length === 0 ? (
+            <p style={{ padding: "1rem", textAlign: "center", fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+              No results found.
+            </p>
+          ) : (
+            filteredSearchResults.map((item, i) => (
+              <button
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  width: "100%",
+                  padding: "0.5rem 0.75rem",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontSize: "0.875rem",
+                }}
+                onClick={() => {
+                  onSelectTable(item.snapshotId, item.tableName)
+                  setSearchOpen(false)
+                  setSearchQuery("")
+                }}
+              >
+                <DataTable size={16} style={{ flexShrink: 0, color: "var(--cds-text-secondary)" }} />
+                {item.label}
+              </button>
+            ))
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,22 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Button,
+  Tile,
+  Tag,
+  SkeletonText,
+  SkeletonPlaceholder,
+  Modal,
+  InlineLoading,
+} from "@carbon/react"
 import {
   DatasourceForm,
   type DatasourceFormData,
@@ -25,13 +18,12 @@ import { useState } from "react"
 import {
   ArrowLeft,
   Camera,
-  Loader2,
-  Pencil,
-  Trash2,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-} from "lucide-react"
+  Edit,
+  TrashCan,
+  CheckmarkFilled,
+  WarningAlt,
+  Time,
+} from "@carbon/react/icons"
 
 interface DatasourceResponse {
   id: string
@@ -124,15 +116,15 @@ export function DatasourceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64" />
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <SkeletonText heading width="30%" />
+        <SkeletonPlaceholder style={{ height: "16rem", width: "100%" }} />
       </div>
     )
   }
 
   if (!ds) {
-    return <p className="text-muted-foreground">Datasource not found.</p>
+    return <p style={{ color: "var(--cds-text-secondary)" }}>Datasource not found.</p>
   }
 
   const recentSnapshots = snapshots
@@ -143,42 +135,48 @@ export function DatasourceDetailPage() {
     .slice(0, 10)
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
         <Button
-          variant="ghost"
-          size="icon"
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          renderIcon={ArrowLeft}
+          iconDescription="Back"
           onClick={() => navigate({ to: "/datasources" })}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{ds.name}</h1>
-          <p className="text-muted-foreground">
+        />
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>{ds.name}</h1>
+          <p style={{ color: "var(--cds-text-secondary)" }}>
             {ds.type} &middot; {ds.host}:{ds.port}/{ds.database}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: "0.5rem" }}>
           <Button
-            variant="outline"
-            onClick={() =>
-              snapshotMutation.mutate()
-            }
+            kind="tertiary"
+            size="sm"
+            renderIcon={Camera}
+            onClick={() => snapshotMutation.mutate()}
             disabled={snapshotMutation.isPending}
           >
             {snapshotMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <InlineLoading description="Taking..." />
             ) : (
-              <Camera className="mr-2 h-4 w-4" />
+              "Take Snapshot"
             )}
-            Take Snapshot
           </Button>
-          <Button variant="outline" onClick={() => setShowEdit(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={Edit}
+            onClick={() => setShowEdit(true)}
+          >
             Edit
           </Button>
           <Button
-            variant="destructive"
+            kind="danger"
+            size="sm"
+            renderIcon={TrashCan}
             onClick={() => {
               if (confirm("Delete this datasource? This cannot be undone.")) {
                 deleteMutation.mutate()
@@ -186,48 +184,44 @@ export function DatasourceDetailPage() {
             }}
             disabled={deleteMutation.isPending}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
         </div>
       </div>
 
       {/* Info cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant={ds.enabled ? "default" : "secondary"}>
-              {ds.enabled ? "Active" : "Disabled"}
-            </Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Schedule</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">
-              {ds.cronExpression ?? "Manual only"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Schemas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{ds.schemas.join(", ")}</p>
-          </CardContent>
-        </Card>
+      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+        <Tile>
+          <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--cds-text-secondary)", marginBottom: "0.5rem" }}>Status</p>
+          <Tag type={ds.enabled ? "green" : "gray"} size="sm">
+            {ds.enabled ? "Active" : "Disabled"}
+          </Tag>
+        </Tile>
+        <Tile>
+          <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--cds-text-secondary)", marginBottom: "0.5rem" }}>Schedule</p>
+          <p style={{ fontSize: "0.875rem" }}>
+            {ds.cronExpression ?? "Manual only"}
+          </p>
+        </Tile>
+        <Tile>
+          <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--cds-text-secondary)", marginBottom: "0.5rem" }}>Schemas</p>
+          <p style={{ fontSize: "0.875rem" }}>{ds.schemas.join(", ")}</p>
+        </Tile>
       </div>
 
       {/* Mutation error display */}
       {(deleteMutation.isError || snapshotMutation.isError) && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          padding: "0.75rem",
+          fontSize: "0.875rem",
+          color: "var(--cds-support-error)",
+          border: "1px solid var(--cds-support-error)",
+          backgroundColor: "var(--cds-notification-error-background-color, rgba(218, 30, 40, 0.1))",
+        }}>
+          <WarningAlt size={16} style={{ flexShrink: 0 }} />
           {(deleteMutation.error ?? snapshotMutation.error) instanceof Error
             ? (deleteMutation.error ?? snapshotMutation.error)?.message
             : "An error occurred"}
@@ -235,99 +229,109 @@ export function DatasourceDetailPage() {
       )}
 
       {/* Snapshots */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Snapshots</CardTitle>
-          <CardDescription>Recent snapshot operations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!recentSnapshots?.length ? (
-            <p className="py-8 text-center text-muted-foreground">
-              No snapshots yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {recentSnapshots.map((snapshot) => (
-                <div
-                  key={snapshot.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    {snapshot.status === "COMPLETED" ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : snapshot.status === "FAILED" ? (
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                    ) : (
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+      <section>
+        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>Snapshots</h2>
+        <p style={{ color: "var(--cds-text-secondary)", fontSize: "0.875rem", marginBottom: "1rem" }}>
+          Recent snapshot operations
+        </p>
+        {!recentSnapshots?.length ? (
+          <p style={{ padding: "2rem 0", textAlign: "center", color: "var(--cds-text-secondary)" }}>
+            No snapshots yet.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {recentSnapshots.map((snapshot) => (
+              <div
+                key={snapshot.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.75rem 1rem",
+                  border: "1px solid var(--cds-border-subtle)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  {snapshot.status === "COMPLETED" ? (
+                    <CheckmarkFilled size={16} style={{ color: "var(--cds-support-success)" }} />
+                  ) : snapshot.status === "FAILED" ? (
+                    <WarningAlt size={16} style={{ color: "var(--cds-support-error)" }} />
+                  ) : (
+                    <Time size={16} style={{ color: "var(--cds-text-secondary)" }} />
+                  )}
+                  <div>
+                    <p style={{ fontWeight: 500 }}>
+                      {snapshot.snapshotType} &middot;{" "}
+                      {snapshot.snapshotDate}
+                    </p>
+                    <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                      {snapshot.tables.length} tables &middot;{" "}
+                      {new Date(snapshot.startedAt).toLocaleString()}
+                    </p>
+                    {snapshot.status === "FAILED" && snapshot.errorMessage && (
+                      <p style={{ fontSize: "0.75rem", color: "var(--cds-support-error)" }}>{snapshot.errorMessage}</p>
                     )}
-                    <div>
-                      <p className="font-medium">
-                        {snapshot.snapshotType} &middot;{" "}
-                        {snapshot.snapshotDate}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {snapshot.tables.length} tables &middot;{" "}
-                        {new Date(snapshot.startedAt).toLocaleString()}
-                      </p>
-                      {snapshot.status === "FAILED" && snapshot.errorMessage && (
-                        <p className="text-xs text-destructive">{snapshot.errorMessage}</p>
-                      )}
-                    </div>
                   </div>
-                  <Badge
-                    variant={
-                      snapshot.status === "COMPLETED"
-                        ? "default"
-                        : snapshot.status === "FAILED"
-                          ? "destructive"
-                          : "secondary"
-                    }
-                  >
-                    {snapshot.status}
-                  </Badge>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Tag
+                  type={snapshot.status === "COMPLETED" ? "green" : snapshot.status === "FAILED" ? "red" : "gray"}
+                  size="sm"
+                >
+                  {snapshot.status}
+                </Tag>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Datasource</DialogTitle>
-          </DialogHeader>
-          {updateMutation.isError && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {updateMutation.error instanceof Error
-                ? updateMutation.error.message
-                : "Failed to update datasource"}
-            </div>
-          )}
-          <DatasourceForm
-            datasourceId={id}
-            initialData={{
-              name: ds.name,
-              type: ds.type,
-              host: ds.host,
-              port: String(ds.port),
-              database: ds.database,
-              username: ds.username,
-              password: "",
-              schemas: ds.schemas.join(", "),
-              cronExpression: ds.cronExpression,
-              retentionDaily: ds.retentionDaily,
-              retentionMonthly: ds.retentionMonthly,
-            }}
-            onSubmit={async (data) => {
-              await updateMutation.mutateAsync(data)
-            }}
-            submitLabel="Save Changes"
-            isSubmitting={updateMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={showEdit}
+        onRequestClose={() => setShowEdit(false)}
+        modalHeading="Edit Datasource"
+        passiveModal
+        size="md"
+      >
+        {updateMutation.isError && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.75rem",
+            marginBottom: "1rem",
+            fontSize: "0.875rem",
+            color: "var(--cds-support-error)",
+            border: "1px solid var(--cds-support-error)",
+            backgroundColor: "var(--cds-notification-error-background-color, rgba(218, 30, 40, 0.1))",
+          }}>
+          <WarningAlt size={16} style={{ flexShrink: 0 }} />
+            {updateMutation.error instanceof Error
+              ? updateMutation.error.message
+              : "Failed to update datasource"}
+          </div>
+        )}
+        <DatasourceForm
+          datasourceId={id}
+          initialData={{
+            name: ds.name,
+            type: ds.type,
+            host: ds.host,
+            port: String(ds.port),
+            database: ds.database,
+            username: ds.username,
+            password: "",
+            schemas: ds.schemas.join(", "),
+            cronExpression: ds.cronExpression,
+            retentionDaily: ds.retentionDaily,
+            retentionMonthly: ds.retentionMonthly,
+          }}
+          onSubmit={async (data) => {
+            await updateMutation.mutateAsync(data)
+          }}
+          submitLabel="Save Changes"
+          isSubmitting={updateMutation.isPending}
+        />
+      </Modal>
     </div>
   )
 }
