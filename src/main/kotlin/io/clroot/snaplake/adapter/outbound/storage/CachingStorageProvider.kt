@@ -51,6 +51,7 @@ class CachingStorageProvider(
 
         Files.createDirectories(cachedFile.parent)
         val tempFile = Files.createTempFile(cachedFile.parent, ".download-", ".tmp")
+        Files.delete(tempFile) // ResponseTransformer.toFile() requires non-existent target
         try {
             delegate.downloadToFile(path, tempFile)
             Files.move(tempFile, cachedFile, StandardCopyOption.ATOMIC_MOVE)
