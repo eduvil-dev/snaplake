@@ -32,14 +32,16 @@ export function AppHeader() {
   return (
     <Header aria-label="Snaplake">
       <HeaderName prefix="">
-        <img
-          src="/favicon.svg"
-          alt=""
-          width={20}
-          height={20}
-          style={{ marginRight: 8 }}
-        />
-        Snaplake
+        <span style={{ display: "inline-flex", alignItems: "center" }}>
+          <img
+            src="/favicon.svg"
+            alt=""
+            width={20}
+            height={20}
+            style={{ marginRight: 8 }}
+          />
+          Snaplake
+        </span>
       </HeaderName>
       <HeaderGlobalBar>
         <HeaderGlobalAction
