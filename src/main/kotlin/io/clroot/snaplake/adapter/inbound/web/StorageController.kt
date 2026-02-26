@@ -1,11 +1,13 @@
 package io.clroot.snaplake.adapter.inbound.web
 
+import io.clroot.snaplake.adapter.inbound.web.dto.StorageCacheResponse
 import io.clroot.snaplake.adapter.inbound.web.dto.StorageSettingsResponse
 import io.clroot.snaplake.adapter.inbound.web.dto.StorageTestResponse
 import io.clroot.snaplake.adapter.inbound.web.dto.UpdateStorageSettingsRequest
 import io.clroot.snaplake.application.port.inbound.GetStorageSettingsUseCase
 import io.clroot.snaplake.application.port.inbound.TestStorageConnectionUseCase
 import io.clroot.snaplake.application.port.inbound.UpdateStorageSettingsUseCase
+import io.clroot.snaplake.config.StorageProviderConfig
 import io.clroot.snaplake.domain.model.StorageType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -16,6 +18,7 @@ class StorageController(
     private val getStorageSettingsUseCase: GetStorageSettingsUseCase,
     private val updateStorageSettingsUseCase: UpdateStorageSettingsUseCase,
     private val testStorageConnectionUseCase: TestStorageConnectionUseCase,
+    private val storageProviderConfig: StorageProviderConfig,
 ) {
     @GetMapping
     fun getSettings(): ResponseEntity<StorageSettingsResponse> {
@@ -49,5 +52,27 @@ class StorageController(
     fun testConnection(): ResponseEntity<StorageTestResponse> {
         val success = testStorageConnectionUseCase.test()
         return ResponseEntity.ok(StorageTestResponse(success = success))
+    }
+
+    @GetMapping("/cache")
+    fun getCacheStatus(): ResponseEntity<StorageCacheResponse> {
+        val info = storageProviderConfig.getCacheInfo()
+        return ResponseEntity.ok(
+            if (info != null) {
+                StorageCacheResponse(
+                    enabled = true,
+                    fileCount = info.fileCount,
+                    totalSizeBytes = info.totalSizeBytes,
+                )
+            } else {
+                StorageCacheResponse(enabled = false, fileCount = 0, totalSizeBytes = 0)
+            },
+        )
+    }
+
+    @DeleteMapping("/cache")
+    fun clearCache(): ResponseEntity<Void> {
+        storageProviderConfig.clearCache()
+        return ResponseEntity.noContent().build()
     }
 }

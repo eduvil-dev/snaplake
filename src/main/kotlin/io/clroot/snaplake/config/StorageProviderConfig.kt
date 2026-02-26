@@ -1,5 +1,6 @@
 package io.clroot.snaplake.config
 
+import io.clroot.snaplake.adapter.outbound.storage.CachingStorageProvider
 import io.clroot.snaplake.adapter.outbound.storage.LocalStorageAdapter
 import io.clroot.snaplake.adapter.outbound.storage.S3StorageAdapter
 import io.clroot.snaplake.application.port.outbound.LoadStorageConfigPort
@@ -8,6 +9,7 @@ import io.clroot.snaplake.domain.model.StorageType
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.nio.file.Path
 
 @Component
 class StorageProviderConfig(
@@ -20,8 +22,24 @@ class StorageProviderConfig(
     private var delegate: StorageProvider? = null
 
     fun refresh() {
+        val current = delegate
+        if (current is CachingStorageProvider) {
+            current.clearCache()
+        }
         delegate = null
         log.info("Storage provider configuration refreshed")
+    }
+
+    fun clearCache() {
+        val current = getDelegate()
+        if (current is CachingStorageProvider) {
+            current.clearCache()
+        }
+    }
+
+    fun getCacheInfo(): CachingStorageProvider.CacheInfo? {
+        val current = getDelegate()
+        return if (current is CachingStorageProvider) current.getCacheInfo() else null
     }
 
     @Synchronized
@@ -43,13 +61,17 @@ class StorageProviderConfig(
 
                     StorageType.S3 -> {
                         log.info("Using S3 storage: bucket={}, region={}", config.s3Bucket, config.s3Region)
-                        S3StorageAdapter.create(
-                            bucket = config.s3Bucket!!,
-                            region = config.s3Region!!,
-                            endpoint = config.s3Endpoint,
-                            accessKey = config.s3AccessKey,
-                            secretKey = config.s3SecretKey,
-                        )
+                        val s3Adapter =
+                            S3StorageAdapter.create(
+                                bucket = config.s3Bucket!!,
+                                region = config.s3Region!!,
+                                endpoint = config.s3Endpoint,
+                                accessKey = config.s3AccessKey,
+                                secretKey = config.s3SecretKey,
+                            )
+                        val cacheDir = Path.of(dataDir, "cache", "snapshots")
+                        log.info("S3 snapshot caching enabled: {}", cacheDir)
+                        CachingStorageProvider(s3Adapter, cacheDir)
                     }
                 }
             }
@@ -76,4 +98,9 @@ class StorageProviderConfig(
     override fun getUri(path: String): String = getDelegate().getUri(path)
 
     override fun testConnection(): Boolean = getDelegate().testConnection()
+
+    override fun downloadToFile(
+        path: String,
+        destination: Path,
+    ) = getDelegate().downloadToFile(path, destination)
 }

@@ -43,3 +43,9 @@ data class UpdateStorageSettingsRequest(
 data class StorageTestResponse(
     val success: Boolean,
 )
+
+data class StorageCacheResponse(
+    val enabled: Boolean,
+    val fileCount: Long,
+    val totalSizeBytes: Long,
+)
