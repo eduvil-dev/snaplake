@@ -13,7 +13,9 @@ import io.mockk.*
 import java.sql.Connection
 import java.sql.ResultSet
 import java.sql.Statement
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 
 class SnapshotServiceTest :
     DescribeSpec({
@@ -145,6 +147,120 @@ class SnapshotServiceTest :
                     shouldThrow<io.clroot.snaplake.domain.exception.SnapshotNotFoundException> {
                         sut.delete(id)
                     }
+                }
+            }
+        }
+
+        describe("recoverAll") {
+            context("RUNNING 상태의 스냅샷이 2개 있는 경우") {
+                it("모두 FAILED로 전환하고 2를 반환한다") {
+                    val snapshot1 = SnapshotMeta.start(DatasourceId.generate(), "ds-1", SnapshotType.DAILY, LocalDate.now())
+                    val snapshot2 = SnapshotMeta.start(DatasourceId.generate(), "ds-2", SnapshotType.DAILY, LocalDate.now())
+                    every { loadSnapshotPort.findAllByStatus(SnapshotStatus.RUNNING) } returns listOf(snapshot1, snapshot2)
+
+                    val result = sut.recoverAll()
+
+                    result shouldBe 2
+                    snapshot1.status shouldBe SnapshotStatus.FAILED
+                    snapshot2.status shouldBe SnapshotStatus.FAILED
+                    verify(exactly = 2) { saveSnapshotPort.save(any()) }
+                }
+            }
+
+            context("RUNNING 상태의 스냅샷이 없는 경우") {
+                it("0을 반환한다") {
+                    every { loadSnapshotPort.findAllByStatus(SnapshotStatus.RUNNING) } returns emptyList()
+
+                    val result = sut.recoverAll()
+
+                    result shouldBe 0
+                    verify(exactly = 0) { saveSnapshotPort.save(any()) }
+                }
+            }
+        }
+
+        describe("recoverStale") {
+            context("60분 전 RUNNING + 5분 전 RUNNING인 경우") {
+                it("60분짜리만 FAILED로 전환하고 1을 반환한다") {
+                    val staleSnapshot =
+                        SnapshotMeta.reconstitute(
+                            id = SnapshotId.generate(),
+                            datasourceId = DatasourceId.generate(),
+                            datasourceName = "ds-stale",
+                            snapshotType = SnapshotType.DAILY,
+                            snapshotDate = LocalDate.now(),
+                            startedAt = Instant.now().minus(Duration.ofMinutes(60)),
+                            status = SnapshotStatus.RUNNING,
+                            completedAt = null,
+                            errorMessage = null,
+                            tables = emptyList(),
+                        )
+                    val recentSnapshot =
+                        SnapshotMeta.reconstitute(
+                            id = SnapshotId.generate(),
+                            datasourceId = DatasourceId.generate(),
+                            datasourceName = "ds-recent",
+                            snapshotType = SnapshotType.DAILY,
+                            snapshotDate = LocalDate.now(),
+                            startedAt = Instant.now().minus(Duration.ofMinutes(5)),
+                            status = SnapshotStatus.RUNNING,
+                            completedAt = null,
+                            errorMessage = null,
+                            tables = emptyList(),
+                        )
+                    every { loadSnapshotPort.findAllByStatus(SnapshotStatus.RUNNING) } returns
+                        listOf(staleSnapshot, recentSnapshot)
+
+                    val result = sut.recoverStale()
+
+                    result shouldBe 1
+                    staleSnapshot.status shouldBe SnapshotStatus.FAILED
+                    recentSnapshot.status shouldBe SnapshotStatus.RUNNING
+                    verify(exactly = 1) { saveSnapshotPort.save(staleSnapshot) }
+                }
+            }
+        }
+
+        describe("takeSnapshot finally 블록") {
+            val datasourceId = DatasourceId.generate()
+            val datasource =
+                Datasource.reconstitute(
+                    id = datasourceId,
+                    name = "test-db",
+                    type = DatabaseType.POSTGRESQL,
+                    host = "localhost",
+                    port = 5432,
+                    database = "mydb",
+                    username = "user",
+                    encryptedPassword = "encrypted",
+                    schemas = listOf("public"),
+                    cronExpression = null,
+                    retentionPolicy = RetentionPolicy(),
+                    enabled = true,
+                    createdAt = Instant.now(),
+                    updatedAt = Instant.now(),
+                )
+
+            context("예상치 못한 Error 발생 시") {
+                it("finally에서 FAILED로 전환한다") {
+                    val dialect = mockk<DatabaseDialect>()
+                    every { loadDatasourcePort.findById(datasourceId) } returns datasource
+                    every { loadSnapshotPort.findByDatasourceIdAndStatus(datasourceId, SnapshotStatus.RUNNING) } returns null
+                    every { encryptionPort.decrypt("encrypted") } returns "password"
+                    every { dialectRegistry.getDialect(DatabaseType.POSTGRESQL) } returns dialect
+                    every { dialect.createConnection(datasource, "password") } throws OutOfMemoryError("heap space")
+
+                    try {
+                        sut.takeSnapshot(datasourceId)
+                    } catch (_: OutOfMemoryError) {
+                        // expected
+                    }
+
+                    val savedSnapshots = mutableListOf<SnapshotMeta>()
+                    verify { saveSnapshotPort.save(capture(savedSnapshots)) }
+                    val lastSaved = savedSnapshots.last()
+                    lastSaved.status shouldBe SnapshotStatus.FAILED
+                    lastSaved.errorMessage shouldBe "Snapshot terminated unexpectedly"
                 }
             }
         }

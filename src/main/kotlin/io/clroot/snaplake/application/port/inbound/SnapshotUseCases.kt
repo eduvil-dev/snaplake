@@ -19,3 +19,9 @@ interface GetSnapshotUseCase {
 interface DeleteSnapshotUseCase {
     fun delete(id: SnapshotId)
 }
+
+interface RecoverOrphanedSnapshotsUseCase {
+    fun recoverAll(): Int
+
+    fun recoverStale(): Int
+}
