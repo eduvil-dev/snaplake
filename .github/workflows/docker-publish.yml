@@ -127,7 +127,7 @@ jobs:
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
           repository: abcdkh1209/snaplake
           short-description: Self-hosted database snapshot management platform
           readme-filepath: DOCKERHUB.md
