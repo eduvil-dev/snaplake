@@ -111,6 +111,11 @@ class DuckDbQueryEngine : QueryEngine {
     fun createConnection(storageConfig: StorageConfig?): Connection {
         val conn = DriverManager.getConnection("jdbc:duckdb:")
 
+        conn.createStatement().use { stmt ->
+            val tmpDir = System.getProperty("java.io.tmpdir") ?: "/tmp"
+            stmt.execute("SET home_directory='$tmpDir'")
+        }
+
         if (storageConfig?.type == StorageType.S3) {
             conn.createStatement().use { stmt ->
                 stmt.execute("INSTALL httpfs; LOAD httpfs;")
