@@ -1,0 +1,33 @@
+services:
+  snaplake:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - snaplake-data:/app/data
+    environment:
+      SNAPLAKE_DATA_DIR: /app/data
+    depends_on:
+      sample-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sample-db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: sampledb
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo1234
+    volumes:
+      - ./examples/sample-data.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo -d sampledb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  snaplake-data:
