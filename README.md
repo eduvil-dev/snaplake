@@ -39,7 +39,11 @@ Compare two snapshots side-by-side with row-level diff. Instantly see added, rem
 ### Docker (Recommended)
 
 ```bash
-docker compose up --build
+docker run -d \
+  --name snaplake \
+  -p 8080:8080 \
+  -v snaplake-data:/app/data \
+  abcdkh1209/snaplake:latest
 ```
 
 Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard.
@@ -49,7 +53,7 @@ Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard.
 A demo compose file is included with a pre-configured PostgreSQL database:
 
 ```bash
-docker compose -f docker-compose.demo.yml up --build
+docker compose -f docker-compose.demo.yml up
 ```
 
 This starts Snaplake alongside a PostgreSQL instance loaded with sample data (customers, products, orders). Connect to it during setup:

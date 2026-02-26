@@ -39,7 +39,11 @@ DuckDB를 사용하여 모든 스냅샷에 SQL 쿼리를 실행합니다. 테이
 ### Docker (권장)
 
 ```bash
-docker compose up --build
+docker run -d \
+  --name snaplake \
+  -p 8080:8080 \
+  -v snaplake-data:/app/data \
+  abcdkh1209/snaplake:latest
 ```
 
 [http://localhost:8080](http://localhost:8080)을 열고 설정 마법사를 따라 진행하세요.
@@ -49,7 +53,7 @@ docker compose up --build
 사전 구성된 PostgreSQL 데이터베이스가 포함된 데모 compose 파일이 제공됩니다:
 
 ```bash
-docker compose -f docker-compose.demo.yml up --build
+docker compose -f docker-compose.demo.yml up
 ```
 
 Snaplake와 함께 샘플 데이터(customers, products, orders)가 로드된 PostgreSQL 인스턴스가 시작됩니다. 설정 시 다음 정보로 연결하세요:
