@@ -31,7 +31,16 @@ export function AppHeader() {
 
   return (
     <Header aria-label="Snaplake">
-      <HeaderName prefix="">Snaplake</HeaderName>
+      <HeaderName prefix="">
+        <img
+          src="/favicon.svg"
+          alt=""
+          width={20}
+          height={20}
+          style={{ marginRight: 8 }}
+        />
+        Snaplake
+      </HeaderName>
       <HeaderGlobalBar>
         <HeaderGlobalAction
           aria-label={`Theme: ${themeLabel}`}
