@@ -6,6 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
@@ -37,6 +38,8 @@ class CachingStorageProvider(
         return try {
             future.join()
             cachedFile.toAbsolutePath().normalize().toString()
+        } catch (e: CompletionException) {
+            throw e.cause ?: e
         } finally {
             inFlightDownloads.remove(path, future)
         }
