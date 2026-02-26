@@ -22,7 +22,7 @@ class CachingStorageProvider(
     }
 
     override fun getUri(path: String): String {
-        val cachedFile = cacheDir.resolve(path)
+        val cachedFile = resolveCachePath(path)
         if (cachedFile.exists()) {
             return cachedFile.toAbsolutePath().normalize().toString()
         }
@@ -38,7 +38,7 @@ class CachingStorageProvider(
             future.join()
             cachedFile.toAbsolutePath().normalize().toString()
         } finally {
-            inFlightDownloads.remove(path)
+            inFlightDownloads.remove(path, future)
         }
     }
 
@@ -65,27 +65,29 @@ class CachingStorageProvider(
 
     override fun delete(path: String) {
         delegate.delete(path)
-        val cachedFile = cacheDir.resolve(path)
+        val cachedFile = resolveCachePath(path)
         Files.deleteIfExists(cachedFile)
     }
 
     override fun deleteAll(prefix: String) {
         delegate.deleteAll(prefix)
-        val cachedDir = cacheDir.resolve(prefix)
+        val cachedDir = resolveCachePath(prefix)
         if (cachedDir.exists() && cachedDir.isDirectory()) {
-            Files
-                .walk(cachedDir)
-                .sorted(Comparator.reverseOrder())
-                .forEach { Files.deleteIfExists(it) }
+            Files.walk(cachedDir).use { stream ->
+                stream
+                    .sorted(Comparator.reverseOrder())
+                    .forEach { Files.deleteIfExists(it) }
+            }
         }
     }
 
     fun clearCache() {
         if (!cacheDir.exists()) return
-        Files
-            .walk(cacheDir)
-            .sorted(Comparator.reverseOrder())
-            .forEach { Files.deleteIfExists(it) }
+        Files.walk(cacheDir).use { stream ->
+            stream
+                .sorted(Comparator.reverseOrder())
+                .forEach { Files.deleteIfExists(it) }
+        }
         Files.createDirectories(cacheDir)
         log.info("Snapshot cache cleared")
     }
@@ -104,6 +106,14 @@ class CachingStorageProvider(
                 }
         }
         return CacheInfo(fileCount, totalSize)
+    }
+
+    private fun resolveCachePath(path: String): Path {
+        val resolved = cacheDir.resolve(path).normalize()
+        require(resolved.startsWith(cacheDir.normalize())) {
+            "Path escapes cache directory: $path"
+        }
+        return resolved
     }
 
     data class CacheInfo(
