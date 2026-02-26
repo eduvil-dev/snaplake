@@ -9,6 +9,7 @@ import {
 } from "@carbon/react"
 import { CheckmarkFilled, ErrorFilled } from "@carbon/react/icons"
 import { ScheduleInput } from "./ScheduleInput"
+import { TableSelector } from "./TableSelector"
 import { api } from "@/lib/api"
 
 export interface DatasourceFormData {
@@ -23,6 +24,7 @@ export interface DatasourceFormData {
   cronExpression: string | null
   retentionDaily: number
   retentionMonthly: number
+  includedTables: Record<string, string[]>
 }
 
 interface DatasourceFormProps {
@@ -45,6 +47,7 @@ const DEFAULT_DATA: DatasourceFormData = {
   cronExpression: null,
   retentionDaily: 30,
   retentionMonthly: 12,
+  includedTables: {},
 }
 
 export function DatasourceForm({
@@ -219,6 +222,23 @@ export function DatasourceForm({
           onChange={handleScheduleChange}
         />
       </div>
+
+      {/* Included Tables (edit mode only) */}
+      {datasourceId && (
+        <div style={{ marginBottom: "2rem" }}>
+          <TableSelector
+            datasourceId={datasourceId}
+            schemas={data.schemas
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)}
+            includedTables={data.includedTables}
+            onTablesChange={(tables) =>
+              setData((prev) => ({ ...prev, includedTables: tables }))
+            }
+          />
+        </div>
+      )}
 
       {/* Retention */}
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>

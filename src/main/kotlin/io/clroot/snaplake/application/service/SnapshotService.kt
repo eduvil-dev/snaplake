@@ -4,6 +4,7 @@ import io.clroot.snaplake.application.port.inbound.DeleteSnapshotUseCase
 import io.clroot.snaplake.application.port.inbound.GetSnapshotUseCase
 import io.clroot.snaplake.application.port.inbound.RecoverOrphanedSnapshotsUseCase
 import io.clroot.snaplake.application.port.inbound.TakeSnapshotUseCase
+import io.clroot.snaplake.application.port.inbound.UpdateSnapshotMetadataUseCase
 import io.clroot.snaplake.application.port.outbound.*
 import io.clroot.snaplake.domain.exception.DatasourceNotFoundException
 import io.clroot.snaplake.domain.exception.SnapshotAlreadyRunningException
@@ -30,7 +31,8 @@ class SnapshotService(
 ) : TakeSnapshotUseCase,
     GetSnapshotUseCase,
     DeleteSnapshotUseCase,
-    RecoverOrphanedSnapshotsUseCase {
+    RecoverOrphanedSnapshotsUseCase,
+    UpdateSnapshotMetadataUseCase {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun takeSnapshot(datasourceId: DatasourceId): SnapshotMeta {
@@ -70,13 +72,21 @@ class SnapshotService(
             try {
                 dialect.createConnection(datasource, decryptedPassword).use { conn ->
                     for (schema in datasource.schemas) {
-                        val tables =
+                        val allTables =
                             try {
                                 dialect.listTables(conn, schema)
                             } catch (e: Exception) {
                                 log.error("Failed to list tables for schema '{}': {}", schema, e.message)
                                 errors.add("Failed to list tables for schema '$schema': ${e.message}")
                                 continue
+                            }
+
+                        val selected = datasource.includedTables[schema]
+                        val tables =
+                            if (selected.isNullOrEmpty()) {
+                                allTables
+                            } else {
+                                allTables.filter { it.name in selected }
                             }
 
                         for (table in tables) {
@@ -199,6 +209,22 @@ class SnapshotService(
         }
 
         loadSnapshotPort.deleteById(id)
+    }
+
+    override fun updateMetadata(command: UpdateSnapshotMetadataUseCase.Command): SnapshotMeta {
+        val snapshot =
+            loadSnapshotPort.findById(command.snapshotId)
+                ?: throw SnapshotNotFoundException(command.snapshotId)
+
+        if (command.tags != null) {
+            snapshot.updateTags(command.tags)
+        }
+        if (command.memo != null) {
+            snapshot.updateMemo(command.memo)
+        }
+
+        saveSnapshotPort.save(snapshot)
+        return snapshot
     }
 
     override fun recoverAll(): Int {

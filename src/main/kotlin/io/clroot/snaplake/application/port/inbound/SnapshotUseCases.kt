@@ -25,3 +25,13 @@ interface RecoverOrphanedSnapshotsUseCase {
 
     fun recoverStale(): Int
 }
+
+interface UpdateSnapshotMetadataUseCase {
+    fun updateMetadata(command: Command): SnapshotMeta
+
+    data class Command(
+        val snapshotId: SnapshotId,
+        val tags: List<String>?,
+        val memo: String?,
+    )
+}

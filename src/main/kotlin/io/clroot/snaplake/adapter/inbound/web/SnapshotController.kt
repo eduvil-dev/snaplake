@@ -1,9 +1,11 @@
 package io.clroot.snaplake.adapter.inbound.web
 
 import io.clroot.snaplake.adapter.inbound.web.dto.SnapshotResponse
+import io.clroot.snaplake.adapter.inbound.web.dto.UpdateSnapshotMetadataRequest
 import io.clroot.snaplake.application.port.inbound.DeleteSnapshotUseCase
 import io.clroot.snaplake.application.port.inbound.GetSnapshotUseCase
 import io.clroot.snaplake.application.port.inbound.TakeSnapshotUseCase
+import io.clroot.snaplake.application.port.inbound.UpdateSnapshotMetadataUseCase
 import io.clroot.snaplake.domain.vo.DatasourceId
 import io.clroot.snaplake.domain.vo.SnapshotId
 import org.springframework.http.ResponseEntity
@@ -15,6 +17,7 @@ class SnapshotController(
     private val takeSnapshotUseCase: TakeSnapshotUseCase,
     private val getSnapshotUseCase: GetSnapshotUseCase,
     private val deleteSnapshotUseCase: DeleteSnapshotUseCase,
+    private val updateSnapshotMetadataUseCase: UpdateSnapshotMetadataUseCase,
 ) {
     @GetMapping("/snapshots")
     fun getAll(
@@ -43,6 +46,22 @@ class SnapshotController(
     ): ResponseEntity<Void> {
         deleteSnapshotUseCase.delete(SnapshotId(id))
         return ResponseEntity.noContent().build()
+    }
+
+    @PatchMapping("/snapshots/{id}/metadata")
+    fun updateMetadata(
+        @PathVariable id: String,
+        @RequestBody request: UpdateSnapshotMetadataRequest,
+    ): ResponseEntity<SnapshotResponse> {
+        val snapshot =
+            updateSnapshotMetadataUseCase.updateMetadata(
+                UpdateSnapshotMetadataUseCase.Command(
+                    snapshotId = SnapshotId(id),
+                    tags = request.tags,
+                    memo = request.memo,
+                ),
+            )
+        return ResponseEntity.ok(SnapshotResponse.from(snapshot))
     }
 
     @PostMapping("/datasources/{id}/snapshot")

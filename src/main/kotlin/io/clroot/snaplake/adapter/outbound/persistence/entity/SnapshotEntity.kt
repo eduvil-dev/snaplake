@@ -23,6 +23,10 @@ class SnapshotEntity(
     var completedAt: String?,
     @Column(name = "error_message")
     var errorMessage: String?,
+    @Column(name = "tags")
+    var tags: String? = "[]",
+    @Column(name = "memo")
+    var memo: String? = null,
     @OneToMany(mappedBy = "snapshot", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val tables: MutableList<SnapshotTableEntity> = mutableListOf(),
 )

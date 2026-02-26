@@ -20,7 +20,8 @@ class DatasourceService(
     UpdateDatasourceUseCase,
     DeleteDatasourceUseCase,
     GetDatasourceUseCase,
-    TestDatasourceConnectionUseCase {
+    TestDatasourceConnectionUseCase,
+    ListDatasourceTablesUseCase {
     override fun register(command: RegisterDatasourceUseCase.Command): Datasource {
         val encryptedPassword = encryptionPort.encrypt(command.password)
         val datasource =
@@ -35,6 +36,7 @@ class DatasourceService(
                 schemas = command.schemas,
                 cronExpression = command.cronExpression,
                 retentionPolicy = command.retentionPolicy,
+                includedTables = command.includedTables,
             )
         val saved = saveDatasourcePort.save(datasource)
         snapshotSchedulerPort.register(saved)
@@ -76,6 +78,7 @@ class DatasourceService(
                 schemas = command.schemas,
                 cronExpression = command.cronExpression,
                 retentionPolicy = command.retentionPolicy,
+                includedTables = command.includedTables,
                 enabled = existing.enabled,
                 createdAt = existing.createdAt,
                 updatedAt = java.time.Instant.now(),
@@ -110,5 +113,21 @@ class DatasourceService(
         val dialect = dialectRegistry.getDialect(datasource.type)
         val decryptedPassword = encryptionPort.decrypt(datasource.encryptedPassword)
         return dialect.testConnection(datasource, decryptedPassword)
+    }
+
+    @Transactional(readOnly = true)
+    override fun listTables(datasourceId: DatasourceId): Map<String, List<String>> {
+        val datasource =
+            loadDatasourcePort.findById(datasourceId)
+                ?: throw DatasourceNotFoundException(datasourceId)
+
+        val dialect = dialectRegistry.getDialect(datasource.type)
+        val decryptedPassword = encryptionPort.decrypt(datasource.encryptedPassword)
+
+        return dialect.createConnection(datasource, decryptedPassword).use { conn ->
+            datasource.schemas.associateWith { schema ->
+                dialect.listTables(conn, schema).map { it.name }
+            }
+        }
     }
 }

@@ -28,6 +28,8 @@ class SnapshotMeta private constructor(
     status: SnapshotStatus,
     completedAt: Instant?,
     errorMessage: String?,
+    tags: List<String>,
+    memo: String?,
 ) {
     var status: SnapshotStatus = status
         private set
@@ -38,8 +40,22 @@ class SnapshotMeta private constructor(
     var errorMessage: String? = errorMessage
         private set
 
+    var tags: List<String> = tags
+        private set
+
+    var memo: String? = memo
+        private set
+
     private val _tables: MutableList<TableMeta> = mutableListOf()
     val tables: List<TableMeta> get() = _tables.toList()
+
+    fun updateTags(tags: List<String>) {
+        this.tags = tags
+    }
+
+    fun updateMemo(memo: String?) {
+        this.memo = memo
+    }
 
     fun addTable(table: TableMeta) {
         require(status == SnapshotStatus.RUNNING) { "Cannot add tables to a non-running snapshot" }
@@ -76,6 +92,8 @@ class SnapshotMeta private constructor(
                 status = SnapshotStatus.RUNNING,
                 completedAt = null,
                 errorMessage = null,
+                tags = emptyList(),
+                memo = null,
             )
 
         fun reconstitute(
@@ -88,6 +106,8 @@ class SnapshotMeta private constructor(
             status: SnapshotStatus,
             completedAt: Instant?,
             errorMessage: String?,
+            tags: List<String> = emptyList(),
+            memo: String? = null,
             tables: List<TableMeta>,
         ): SnapshotMeta =
             SnapshotMeta(
@@ -100,6 +120,8 @@ class SnapshotMeta private constructor(
                 status,
                 completedAt,
                 errorMessage,
+                tags,
+                memo,
             ).also { it._tables.addAll(tables) }
     }
 }

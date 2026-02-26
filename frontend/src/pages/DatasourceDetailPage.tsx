@@ -37,6 +37,7 @@ interface DatasourceResponse {
   cronExpression: string | null
   retentionDaily: number
   retentionMonthly: number
+  includedTables: Record<string, string[]>
   enabled: boolean
   createdAt: string
   updatedAt: string
@@ -89,6 +90,7 @@ export function DatasourceDetailPage() {
         cronExpression: data.cronExpression,
         retentionDaily: data.retentionDaily,
         retentionMonthly: data.retentionMonthly,
+        includedTables: data.includedTables,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["datasources"] })
@@ -324,6 +326,7 @@ export function DatasourceDetailPage() {
             cronExpression: ds.cronExpression,
             retentionDaily: ds.retentionDaily,
             retentionMonthly: ds.retentionMonthly,
+            includedTables: ds.includedTables ?? {},
           }}
           onSubmit={async (data) => {
             await updateMutation.mutateAsync(data)
