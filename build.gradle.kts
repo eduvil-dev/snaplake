@@ -4,7 +4,6 @@ plugins {
     kotlin("plugin.jpa") version "2.1.10"
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.graalvm.buildtools.native") version "0.10.5"
 }
 
 group = "io.clroot.snaplake"
@@ -80,15 +79,49 @@ tasks.withType<Jar> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-tasks.register<Exec>("buildFrontend") {
+val bunExecutable: String by lazy {
+    val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+    val bunBinary = if (isWindows) "bun.exe" else "bun"
+
+    // 1) BUN_INSTALL env (custom install dir)  2) default ~/.bun
+    listOfNotNull(
+        System.getenv("BUN_INSTALL")?.let { File(it, "bin/$bunBinary") },
+        File(System.getProperty("user.home"), ".bun/bin/$bunBinary"),
+    )
+        .firstOrNull { it.exists() }
+        ?.absolutePath
+    // 3) Resolve from PATH via which/where
+        ?: runCatching {
+            val cmd = if (isWindows) listOf("where", "bun") else listOf("which", "bun")
+            ProcessBuilder(cmd)
+                .redirectErrorStream(true)
+                .start()
+                .inputStream.bufferedReader().readLine()?.trim()
+                ?.takeIf { File(it).exists() }
+        }.getOrNull()
+    // 4) Fallback — let OS resolve
+        ?: "bun"
+}
+
+tasks.register<Exec>("installFrontend") {
     workingDir = file("frontend")
-    val bun =
-        File(System.getProperty("user.home"), ".bun/bin/bun")
-            .takeIf { it.exists() }
-            ?.absolutePath
-            ?: File(System.getProperty("user.home"), ".bun/bin/bun.cmd")
-    "bun"
-    commandLine(bun, "run", "build")
+    commandLine(bunExecutable, "install", "--frozen-lockfile")
+    inputs.files("frontend/package.json", "frontend/bun.lock")
+    outputs.dir("frontend/node_modules")
+}
+
+tasks.register<Exec>("buildFrontend") {
+    dependsOn("installFrontend")
+    workingDir = file("frontend")
+    commandLine(bunExecutable, "run", "build")
+    inputs.dir("frontend/src")
+    inputs.files(
+        "frontend/index.html",
+        "frontend/vite.config.ts",
+        "frontend/tsconfig.json",
+        "frontend/tsconfig.app.json",
+    )
+    outputs.dir("src/main/resources/static")
 }
 
 tasks.named("processResources") {

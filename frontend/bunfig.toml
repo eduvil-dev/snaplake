@@ -1,0 +1,7 @@
+[install]
+# 의존성 설치 시 lock 파일과 일치하지 않으면 실패
+frozenLockfile = false
+
+[install.lockfile]
+# 텍스트 포맷 lock 파일 사용 (Bun v4+)
+print = "bun"
