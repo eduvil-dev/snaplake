@@ -27,6 +27,7 @@ class DuckDbQueryEngine : QueryEngine {
         viewSetupSql: List<String>,
     ): QueryResult {
         validateQuery(sql)
+        val countSql = "SELECT COUNT(*) AS cnt FROM ($sql) AS _q"
         val wrappedSql = "SELECT * FROM ($sql) AS _q LIMIT $limit OFFSET $offset"
 
         try {
@@ -35,8 +36,13 @@ class DuckDbQueryEngine : QueryEngine {
                     viewSetupSql.forEach { setupSql ->
                         stmt.execute(setupSql)
                     }
+
+                    val totalRows = stmt.executeQuery(countSql).use { rs ->
+                        if (rs.next()) rs.getLong("cnt") else 0L
+                    }
+
                     stmt.executeQuery(wrappedSql).use { rs ->
-                        resultSetToQueryResult(rs)
+                        resultSetToQueryResult(rs, totalRows)
                     }
                 }
             }
@@ -74,13 +80,19 @@ class DuckDbQueryEngine : QueryEngine {
         limit: Int,
         offset: Int,
     ): QueryResult {
-        val sql =
+        val baseSql =
             buildString {
                 append("SELECT * FROM '$uri'")
                 if (!where.isNullOrBlank()) {
                     validateQuery("SELECT 1 WHERE $where") // Validate the WHERE clause
                     append(" WHERE $where")
                 }
+            }
+
+        val countSql = "SELECT COUNT(*) AS cnt FROM ($baseSql) AS _q"
+        val dataSql =
+            buildString {
+                append(baseSql)
                 if (!orderBy.isNullOrBlank()) {
                     append(" ORDER BY $orderBy")
                 }
@@ -89,8 +101,12 @@ class DuckDbQueryEngine : QueryEngine {
 
         return createConnection(storageConfig).use { conn ->
             conn.createStatement().use { stmt ->
-                stmt.executeQuery(sql).use { rs ->
-                    resultSetToQueryResult(rs)
+                val totalRows = stmt.executeQuery(countSql).use { rs ->
+                    if (rs.next()) rs.getLong("cnt") else 0L
+                }
+
+                stmt.executeQuery(dataSql).use { rs ->
+                    resultSetToQueryResult(rs, totalRows)
                 }
             }
         }
@@ -175,7 +191,7 @@ class DuckDbQueryEngine : QueryEngine {
         }
     }
 
-    private fun resultSetToQueryResult(rs: ResultSet): QueryResult {
+    private fun resultSetToQueryResult(rs: ResultSet, totalRows: Long): QueryResult {
         val metaData = rs.metaData
         val columnCount = metaData.columnCount
 
@@ -196,7 +212,7 @@ class DuckDbQueryEngine : QueryEngine {
         return QueryResult(
             columns = columns,
             rows = rows,
-            totalRows = rows.size.toLong(),
+            totalRows = totalRows,
         )
     }
 }

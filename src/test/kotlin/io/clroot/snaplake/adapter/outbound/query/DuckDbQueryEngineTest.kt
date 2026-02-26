@@ -19,6 +19,29 @@ class DuckDbQueryEngineTest :
                 result.columns shouldHaveSize 2
                 result.columns[0].name shouldBe "val"
                 result.rows shouldHaveSize 1
+                result.totalRows shouldBe 1
+            }
+
+            it("LIMIT 적용 시 totalRows는 전체 행 수를 반환한다") {
+                val tempParquet = createTestParquet()
+                try {
+                    val uri = tempParquet.toAbsolutePath()
+                    val viewSetupSql = listOf(
+                        """CREATE VIEW "test_data" AS SELECT * FROM '$uri'""",
+                    )
+
+                    val result = engine.executeQuery(
+                        sql = "SELECT * FROM test_data",
+                        storageConfig = null,
+                        limit = 2,
+                        offset = 0,
+                        viewSetupSql = viewSetupSql,
+                    )
+                    result.rows shouldHaveSize 2
+                    result.totalRows shouldBe 3
+                } finally {
+                    Files.deleteIfExists(tempParquet)
+                }
             }
 
             it("INSERT 쿼리는 거부한다") {
@@ -65,6 +88,24 @@ class DuckDbQueryEngineTest :
                         )
                     result.rows shouldHaveSize 3
                     result.columns.any { it.name == "id" } shouldBe true
+                    result.totalRows shouldBe 3
+                } finally {
+                    Files.deleteIfExists(tempParquet)
+                }
+            }
+
+            it("LIMIT 적용 시 totalRows는 전체 행 수를 반환한다") {
+                val tempParquet = createTestParquet()
+                try {
+                    val result =
+                        engine.previewTable(
+                            uri = tempParquet.toAbsolutePath().toString(),
+                            storageConfig = null,
+                            limit = 1,
+                            offset = 0,
+                        )
+                    result.rows shouldHaveSize 1
+                    result.totalRows shouldBe 3
                 } finally {
                     Files.deleteIfExists(tempParquet)
                 }
