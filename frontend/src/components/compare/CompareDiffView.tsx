@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import {
   Button,
+  Modal,
   SkeletonPlaceholder,
   Table,
   TableHead,
@@ -49,6 +50,21 @@ interface CompareDiffViewProps {
   tableName: string
 }
 
+type SelectedCellInfo = {
+  columnName: string
+  columnType: string
+} & (
+  | { diffType: "ADDED"; value: unknown }
+  | { diffType: "REMOVED"; value: unknown }
+  | { diffType: "CHANGED"; leftValue: unknown; rightValue: unknown; isChanged: boolean }
+)
+
+function formatCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "NULL"
+  if (typeof value === "object") return JSON.stringify(value, null, 2)
+  return String(value)
+}
+
 const PAGE_SIZE = 100
 
 export function CompareDiffView({
@@ -57,6 +73,7 @@ export function CompareDiffView({
   tableName,
 }: CompareDiffViewProps) {
   const [viewMode, setViewMode] = useState<"unified" | "split">("unified")
+  const [selectedCell, setSelectedCell] = useState<SelectedCellInfo | null>(null)
   const [page, setPage] = useState(0)
   const [prevKey, setPrevKey] = useState(
     `${leftSnapshotId}-${rightSnapshotId}-${tableName}`,
@@ -183,10 +200,16 @@ export function CompareDiffView({
           No differences found
         </div>
       ) : viewMode === "unified" ? (
-        <UnifiedView columns={data.columns} rows={data.rows} />
+        <UnifiedView columns={data.columns} rows={data.rows} onCellClick={setSelectedCell} />
       ) : (
-        <SplitView columns={data.columns} rows={data.rows} />
+        <SplitView columns={data.columns} rows={data.rows} onCellClick={setSelectedCell} />
       )}
+
+      {/* Cell Detail Modal */}
+      <CellDetailModal
+        cell={selectedCell}
+        onClose={() => setSelectedCell(null)}
+      />
 
       {/* Pagination */}
       {data.totalRows > 0 && (
@@ -222,9 +245,11 @@ export function CompareDiffView({
 function UnifiedView({
   columns,
   rows,
+  onCellClick,
 }: {
   columns: DiffColumn[]
   rows: DiffRow[]
+  onCellClick: (info: SelectedCellInfo) => void
 }) {
   return (
     <div style={{ overflow: "auto", border: "1px solid var(--cds-border-subtle)" }}>
@@ -261,7 +286,11 @@ function UnifiedView({
                     +
                   </TableCell>
                   {row.values.map((cell, j) => (
-                    <TableCell key={j} style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <TableCell
+                      key={j}
+                      style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+                      onClick={() => onCellClick({ columnName: columns[j].name, columnType: columns[j].type, diffType: "ADDED", value: cell })}
+                    >
                       <CellDisplay value={cell} />
                     </TableCell>
                   ))}
@@ -283,7 +312,11 @@ function UnifiedView({
                     -
                   </TableCell>
                   {row.values.map((cell, j) => (
-                    <TableCell key={j} style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <TableCell
+                      key={j}
+                      style={{ maxWidth: "20rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+                      onClick={() => onCellClick({ columnName: columns[j].name, columnType: columns[j].type, diffType: "REMOVED", value: cell })}
+                    >
                       <CellDisplay value={cell} />
                     </TableCell>
                   ))}
@@ -292,6 +325,15 @@ function UnifiedView({
             }
             // CHANGED: two rows
             const changedSet = new Set(row.changedColumns)
+            const changedCellClick = (j: number) =>
+              onCellClick({
+                columnName: columns[j].name,
+                columnType: columns[j].type,
+                diffType: "CHANGED",
+                leftValue: row.left[j],
+                rightValue: row.right[j],
+                isChanged: changedSet.has(j),
+              })
             return [
               <TableRow key={`${i}-left`} style={{
                 borderLeft: "4px solid var(--cds-support-error)",
@@ -313,8 +355,10 @@ function UnifiedView({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      cursor: "pointer",
                       ...(changedSet.has(j) ? { backgroundColor: "rgba(218, 30, 40, 0.2)", fontWeight: 500 } : {}),
                     }}
+                    onClick={() => changedCellClick(j)}
                   >
                     <CellDisplay value={cell} />
                   </TableCell>
@@ -340,8 +384,10 @@ function UnifiedView({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      cursor: "pointer",
                       ...(changedSet.has(j) ? { backgroundColor: "rgba(36, 161, 72, 0.2)", fontWeight: 500 } : {}),
                     }}
+                    onClick={() => changedCellClick(j)}
                   >
                     <CellDisplay value={cell} />
                   </TableCell>
@@ -358,24 +404,44 @@ function UnifiedView({
 function SplitView({
   columns,
   rows,
+  onCellClick,
 }: {
   columns: DiffColumn[]
   rows: DiffRow[]
+  onCellClick: (info: SelectedCellInfo) => void
 }) {
-  const leftRows: { values: unknown[]; type: "removed" | "changed"; changedCols?: Set<number> }[] = []
-  const rightRows: { values: unknown[]; type: "added" | "changed"; changedCols?: Set<number> }[] = []
+  const leftRows: { values: unknown[]; type: "removed" | "changed"; changedCols?: Set<number>; sourceRow: DiffRow }[] = []
+  const rightRows: { values: unknown[]; type: "added" | "changed"; changedCols?: Set<number>; sourceRow: DiffRow }[] = []
 
   for (const row of rows) {
     if (row.diffType === "ADDED") {
-      leftRows.push({ values: columns.map(() => null), type: "removed" })
-      rightRows.push({ values: row.values, type: "added" })
+      leftRows.push({ values: columns.map(() => null), type: "removed", sourceRow: row })
+      rightRows.push({ values: row.values, type: "added", sourceRow: row })
     } else if (row.diffType === "REMOVED") {
-      leftRows.push({ values: row.values, type: "removed" })
-      rightRows.push({ values: columns.map(() => null), type: "added" })
+      leftRows.push({ values: row.values, type: "removed", sourceRow: row })
+      rightRows.push({ values: columns.map(() => null), type: "added", sourceRow: row })
     } else {
       const changedCols = new Set(row.changedColumns)
-      leftRows.push({ values: row.left, type: "changed", changedCols })
-      rightRows.push({ values: row.right, type: "changed", changedCols })
+      leftRows.push({ values: row.left, type: "changed", changedCols, sourceRow: row })
+      rightRows.push({ values: row.right, type: "changed", changedCols, sourceRow: row })
+    }
+  }
+
+  const handleCellClick = (sourceRow: DiffRow, colIndex: number) => {
+    const col = columns[colIndex]
+    if (sourceRow.diffType === "ADDED") {
+      onCellClick({ columnName: col.name, columnType: col.type, diffType: "ADDED", value: sourceRow.values[colIndex] })
+    } else if (sourceRow.diffType === "REMOVED") {
+      onCellClick({ columnName: col.name, columnType: col.type, diffType: "REMOVED", value: sourceRow.values[colIndex] })
+    } else {
+      onCellClick({
+        columnName: col.name,
+        columnType: col.type,
+        diffType: "CHANGED",
+        leftValue: sourceRow.left[colIndex],
+        rightValue: sourceRow.right[colIndex],
+        isChanged: sourceRow.changedColumns.includes(colIndex),
+      })
     }
   }
 
@@ -425,8 +491,10 @@ function SplitView({
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
+                        ...(!isBlank ? { cursor: "pointer" } : {}),
                         ...(isChanged && row.changedCols?.has(j) ? { backgroundColor: "rgba(218, 30, 40, 0.2)", fontWeight: 500 } : {}),
                       }}
+                      onClick={!isBlank ? () => handleCellClick(row.sourceRow, j) : undefined}
                     >
                       {!isBlank && <CellDisplay value={cell} />}
                     </TableCell>
@@ -469,8 +537,10 @@ function SplitView({
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
+                        ...(!isBlank ? { cursor: "pointer" } : {}),
                         ...(isChanged && row.changedCols?.has(j) ? { backgroundColor: "rgba(36, 161, 72, 0.2)", fontWeight: 500 } : {}),
                       }}
+                      onClick={!isBlank ? () => handleCellClick(row.sourceRow, j) : undefined}
                     >
                       {!isBlank && <CellDisplay value={cell} />}
                     </TableCell>
@@ -482,5 +552,132 @@ function SplitView({
         </Table>
       </div>
     </div>
+  )
+}
+
+function CellDetailModal({
+  cell,
+  onClose,
+}: {
+  cell: SelectedCellInfo | null
+  onClose: () => void
+}) {
+  const diffLabel =
+    cell?.diffType === "ADDED" ? "Added" :
+    cell?.diffType === "REMOVED" ? "Removed" :
+    "Changed"
+
+  return (
+    <Modal
+      open={cell !== null}
+      onRequestClose={onClose}
+      modalHeading={cell?.columnName ?? ""}
+      modalLabel={`${cell?.columnType ?? ""} · ${diffLabel}`}
+      passiveModal
+      size="md"
+    >
+      {cell && (
+        <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+          {cell.diffType === "CHANGED" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: "var(--cds-support-error)",
+                }}>
+                  <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "1.25rem",
+                    height: "1.25rem",
+                    fontFamily: "monospace",
+                    fontSize: "0.875rem",
+                    borderRadius: "2px",
+                    backgroundColor: "rgba(218, 30, 40, 0.1)",
+                  }}>-</span>
+                  Old
+                </div>
+                <pre style={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                  fontFamily: "var(--cds-code-01-font-family, monospace)",
+                  fontSize: "0.875rem",
+                  padding: "0.75rem",
+                  borderRadius: "4px",
+                  backgroundColor: "rgba(218, 30, 40, 0.05)",
+                  border: "1px solid rgba(218, 30, 40, 0.2)",
+                  margin: 0,
+                }}>
+                  {formatCellValue(cell.leftValue)}
+                </pre>
+              </div>
+              <div>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: "var(--cds-support-success)",
+                }}>
+                  <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "1.25rem",
+                    height: "1.25rem",
+                    fontFamily: "monospace",
+                    fontSize: "0.875rem",
+                    borderRadius: "2px",
+                    backgroundColor: "rgba(36, 161, 72, 0.1)",
+                  }}>+</span>
+                  New
+                </div>
+                <pre style={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                  fontFamily: "var(--cds-code-01-font-family, monospace)",
+                  fontSize: "0.875rem",
+                  padding: "0.75rem",
+                  borderRadius: "4px",
+                  backgroundColor: "rgba(36, 161, 72, 0.05)",
+                  border: "1px solid rgba(36, 161, 72, 0.2)",
+                  margin: 0,
+                }}>
+                  {formatCellValue(cell.rightValue)}
+                </pre>
+              </div>
+            </div>
+          ) : (
+            <pre style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+              fontFamily: "var(--cds-code-01-font-family, monospace)",
+              fontSize: "0.875rem",
+              padding: "0.75rem",
+              borderRadius: "4px",
+              backgroundColor: cell.diffType === "ADDED"
+                ? "rgba(36, 161, 72, 0.05)"
+                : "rgba(218, 30, 40, 0.05)",
+              border: `1px solid ${
+                cell.diffType === "ADDED"
+                  ? "rgba(36, 161, 72, 0.2)"
+                  : "rgba(218, 30, 40, 0.2)"
+              }`,
+              margin: 0,
+            }}>
+              {formatCellValue(cell.value)}
+            </pre>
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
