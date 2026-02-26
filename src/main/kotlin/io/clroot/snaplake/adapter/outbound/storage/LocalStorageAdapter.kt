@@ -55,7 +55,7 @@ class LocalStorageAdapter(
         root
             .resolve(path)
             .toAbsolutePath()
-            .toUri()
+            .normalize()
             .toString()
 
     override fun testConnection(): Boolean =

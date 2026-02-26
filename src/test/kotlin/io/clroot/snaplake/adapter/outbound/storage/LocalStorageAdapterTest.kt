@@ -3,6 +3,7 @@ package io.clroot.snaplake.adapter.outbound.storage
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldStartWith
 import java.nio.file.Files
 
@@ -70,10 +71,17 @@ class LocalStorageAdapterTest :
         }
 
         describe("getUri") {
-            it("file:// URI를 반환한다") {
+            it("절대 파일 경로를 반환한다") {
                 adapter.write("uri-test.parquet", byteArrayOf(1))
                 val uri = adapter.getUri("uri-test.parquet")
-                uri shouldStartWith "file:/"
+                uri shouldStartWith "/"
+            }
+
+            it("공백이 포함된 경로도 인코딩 없이 반환한다") {
+                adapter.write("Sample DB/test.parquet", byteArrayOf(1))
+                val uri = adapter.getUri("Sample DB/test.parquet")
+                uri shouldStartWith "/"
+                uri shouldContain "Sample DB"
             }
         }
 
