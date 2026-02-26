@@ -32,6 +32,23 @@ interface StorageTestResponse {
   success: boolean
 }
 
+interface CacheInfo {
+  enabled: boolean
+  fileCount: number
+  totalSizeBytes: number
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 B"
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  )
+  const value = bytes / Math.pow(1024, i)
+  return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
+
 export function StorageSettingsPage() {
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
@@ -42,6 +59,19 @@ export function StorageSettingsPage() {
   })
 
   const [formData, setFormData] = useState<StorageSettings | null>(null)
+
+  const { data: cacheInfo } = useQuery({
+    queryKey: ["storage-cache"],
+    queryFn: () => api.get<CacheInfo>("/api/storage/cache"),
+    enabled: settings?.type === "S3",
+  })
+
+  const clearCacheMutation = useMutation({
+    mutationFn: () => api.delete("/api/storage/cache"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storage-cache"] })
+    },
+  })
 
   const [testStatus, setTestStatus] = useState<
     "idle" | "testing" | "success" | "error"
@@ -317,6 +347,55 @@ export function StorageSettingsPage() {
                 </div>
               </>
             )}
+          </div>
+        </Tile>
+      )}
+
+      {cacheInfo?.enabled && (
+        <Tile>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Local Cache</h2>
+              <Button
+                kind="danger--tertiary"
+                size="sm"
+                disabled={clearCacheMutation.isPending || cacheInfo.fileCount === 0}
+                onClick={() => {
+                  if (window.confirm(`Clear ${cacheInfo.fileCount.toLocaleString()} cached files? They will need to be re-downloaded from remote storage.`)) {
+                    clearCacheMutation.mutate()
+                  }
+                }}
+              >
+                {clearCacheMutation.isPending && (
+                  <InlineLoading style={{ marginRight: "0.25rem" }} />
+                )}
+                Clear Cache
+              </Button>
+            </div>
+
+            {clearCacheMutation.isError && (
+              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-error)" }}>
+                <CloseFilled size={16} />
+                {clearCacheMutation.error instanceof Error
+                  ? clearCacheMutation.error.message
+                  : "Failed to clear cache"}
+              </span>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Cached files</span>
+                <span style={{ fontSize: "0.875rem" }}>
+                  {cacheInfo.fileCount.toLocaleString()} files
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Total size</span>
+                <span style={{ fontSize: "0.875rem" }}>
+                  {formatBytes(cacheInfo.totalSizeBytes)}
+                </span>
+              </div>
+            </div>
           </div>
         </Tile>
       )}
