@@ -151,7 +151,8 @@ export function QueryEditor({
   useEffect(() => {
     if (!editorRef.current) return
 
-    const isDark = document.documentElement.classList.contains("dark")
+    const isDark =
+      document.documentElement.dataset.carbonTheme === "g100"
 
     const state = EditorState.create({
       doc: value,
@@ -174,7 +175,7 @@ export function QueryEditor({
           }
         }),
         placeholder(
-          `Write your SQL query here... (${/Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl"}+Enter to execute)`,
+          `Write your SQL query here... (${/Mac|iPhone|iPad/.test(navigator.userAgent) ? "\u2318" : "Ctrl"}+Enter to execute)`,
         ),
         EditorView.theme({
           "&": {
@@ -208,7 +209,11 @@ export function QueryEditor({
   return (
     <div
       ref={editorRef}
-      className="h-full overflow-hidden rounded-xl border"
+      style={{
+        height: "100%",
+        overflow: "hidden",
+        border: "1px solid var(--cds-border-subtle)",
+      }}
     />
   )
 }

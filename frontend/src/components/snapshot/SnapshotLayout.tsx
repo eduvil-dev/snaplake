@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { SidePanel } from "@/components/snapshot/SidePanel"
-import { cn } from "@/lib/utils"
 
 const STORAGE_KEY = "snaplake:sidepanel-width"
 const MIN_WIDTH = 200
@@ -69,8 +68,12 @@ export function SnapshotLayout({
   }, [width])
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)]">
-      <div className="relative shrink-0" style={{ width }}>
+    <div style={{
+      display: "flex",
+      height: "calc(100vh - 3rem)",
+      margin: "-1.5rem",
+    }}>
+      <div style={{ position: "relative", flexShrink: 0, width }}>
         <SidePanel
           onSelectTable={onSelectTable}
           onSelectSnapshot={onSelectSnapshot}
@@ -78,16 +81,27 @@ export function SnapshotLayout({
           selectedTable={selectedTable}
         />
         <div
-          className={cn(
-            "absolute inset-y-0 -right-px z-10 w-1 cursor-col-resize transition-colors hover:bg-primary/20",
-            isDragging && "bg-primary/30",
-          )}
+          style={{
+            position: "absolute",
+            inset: "0 -1px 0 auto",
+            zIndex: 10,
+            width: "4px",
+            cursor: "col-resize",
+            backgroundColor: isDragging ? "var(--cds-border-interactive)" : "transparent",
+            transition: "background-color 150ms",
+          }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onMouseEnter={(e) => {
+            if (!isDragging) (e.currentTarget.style.backgroundColor = "var(--cds-border-subtle)")
+          }}
+          onMouseLeave={(e) => {
+            if (!isDragging) (e.currentTarget.style.backgroundColor = "transparent")
+          }}
         />
       </div>
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "1.5rem" }}>
         {children}
       </div>
     </div>

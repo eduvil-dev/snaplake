@@ -1,7 +1,5 @@
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { TextInput, Button } from "@carbon/react"
 
 interface AdminAccountStepProps {
   data: { username: string; password: string; confirmPassword: string }
@@ -48,60 +46,49 @@ export function AdminAccountStep({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Admin Account</h2>
-        <p className="text-muted-foreground">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Admin Account</h2>
+        <p style={{ marginTop: "0.5rem", color: "var(--cds-text-secondary)" }}>
           Create the admin account for managing Snaplake.
         </p>
       </div>
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            value={data.username}
-            onChange={(e) => onChange({ ...data, username: e.target.value })}
-            placeholder="admin"
-          />
-          {errors.username && (
-            <p className="text-sm text-destructive">{errors.username}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={data.password}
-            onChange={(e) => onChange({ ...data, password: e.target.value })}
-            placeholder="At least 8 characters"
-          />
-          {errors.password && (
-            <p className="text-sm text-destructive">{errors.password}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={data.confirmPassword}
-            onChange={(e) =>
-              onChange({ ...data, confirmPassword: e.target.value })
-            }
-            placeholder="Re-enter your password"
-          />
-          {errors.confirmPassword && (
-            <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-          )}
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <TextInput
+          id="username"
+          labelText="Username"
+          value={data.username}
+          onChange={(e) => onChange({ ...data, username: e.target.value })}
+          placeholder="admin"
+          invalid={!!errors.username}
+          invalidText={errors.username}
+        />
+        <TextInput
+          id="password"
+          type="password"
+          labelText="Password"
+          value={data.password}
+          onChange={(e) => onChange({ ...data, password: e.target.value })}
+          placeholder="At least 8 characters"
+          invalid={!!errors.password}
+          invalidText={errors.password}
+        />
+        <TextInput
+          id="confirmPassword"
+          type="password"
+          labelText="Confirm Password"
+          value={data.confirmPassword}
+          onChange={(e) => onChange({ ...data, confirmPassword: e.target.value })}
+          placeholder="Re-enter your password"
+          invalid={!!errors.confirmPassword}
+          invalidText={errors.confirmPassword}
+        />
       </div>
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+      <div style={{ display: "flex", gap: "1rem" }}>
+        <Button kind="secondary" onClick={onBack} style={{ flex: 1 }}>
           Back
         </Button>
-        <Button onClick={handleNext} className="flex-1 h-11">
+        <Button onClick={handleNext} style={{ flex: 1 }}>
           Next
         </Button>
       </div>

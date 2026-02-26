@@ -1,22 +1,18 @@
 import { Outlet } from "@tanstack/react-router"
+import { Content } from "@carbon/react"
 import { AppSidebar } from "./AppSidebar"
-import { AppBreadcrumb } from "./AppBreadcrumb"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AppHeader } from "./AppHeader"
 import { ShortcutHelp } from "@/components/common/ShortcutHelp"
 
 export function AppLayout() {
   return (
-    <SidebarProvider>
+    <>
+      <AppHeader />
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <AppBreadcrumb />
-        </header>
-        <main className="min-w-0 flex-1 overflow-auto p-6">
-          <Outlet />
-        </main>
-      </SidebarInset>
+      <Content className="app-content">
+        <Outlet />
+      </Content>
       <ShortcutHelp />
-    </SidebarProvider>
+    </>
   )
 }

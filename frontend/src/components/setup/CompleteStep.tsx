@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
-import { CheckCircle, Loader2 } from "lucide-react"
+import { Button, InlineLoading } from "@carbon/react"
+import { CheckmarkFilled } from "@carbon/react/icons"
 
 interface CompleteStepProps {
   isSubmitting: boolean
@@ -15,36 +15,48 @@ export function CompleteStep({
   onBack,
 }: CompleteStepProps) {
   return (
-    <div className="flex flex-col items-center space-y-8 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900">
-        <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "2rem" }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "4rem",
+        height: "4rem",
+        borderRadius: "1rem",
+        backgroundColor: "var(--cds-support-success)",
+        color: "var(--cds-text-on-color)",
+      }}>
+        <CheckmarkFilled size={32} />
       </div>
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Ready to Go</h2>
-        <p className="max-w-prose text-muted-foreground">
+      <div>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Ready to Go</h2>
+        <p style={{ marginTop: "0.5rem", maxWidth: "65ch", color: "var(--cds-text-secondary)" }}>
           Everything is configured. Click the button below to initialize
           Snaplake and start managing your database snapshots.
         </p>
       </div>
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <p style={{ fontSize: "0.875rem", color: "var(--cds-support-error)" }}>{error}</p>
       )}
-      <div className="flex w-full gap-4 sm:w-auto">
+      <div style={{ display: "flex", gap: "1rem", width: "100%" }}>
         <Button
-          variant="outline"
+          kind="secondary"
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex-1 h-11 sm:px-8"
+          style={{ flex: 1 }}
         >
           Back
         </Button>
         <Button
           onClick={onFinish}
           disabled={isSubmitting}
-          className="flex-1 h-14 text-base sm:h-11 sm:px-8"
+          style={{ flex: 1 }}
         >
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Complete Setup
+          {isSubmitting ? (
+            <InlineLoading description="Setting up..." />
+          ) : (
+            "Complete Setup"
+          )}
         </Button>
       </div>
     </div>

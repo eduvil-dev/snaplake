@@ -2,6 +2,9 @@ const THEME_KEY = "snaplake-theme"
 
 export type Theme = "light" | "dark" | "system"
 
+/** Carbon theme token: "white" for light, "g100" for dark */
+export type CarbonTheme = "white" | "g100"
+
 export function getStoredTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY)
   if (stored === "light" || stored === "dark" || stored === "system") {
@@ -15,21 +18,27 @@ export function setStoredTheme(theme: Theme): void {
   applyTheme(theme)
 }
 
-export function applyTheme(theme: Theme): void {
-  const root = document.documentElement
+export function resolveTheme(theme: Theme): CarbonTheme {
   const isDark =
     theme === "dark" ||
     (theme === "system" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches)
+  return isDark ? "g100" : "white"
+}
 
-  root.classList.toggle("dark", isDark)
+export function applyTheme(theme: Theme): void {
+  const carbonTheme = resolveTheme(theme)
+  if (carbonTheme === "white") {
+    delete document.documentElement.dataset.carbonTheme
+  } else {
+    document.documentElement.dataset.carbonTheme = carbonTheme
+  }
 }
 
 export function initTheme(): void {
   const theme = getStoredTheme()
   applyTheme(theme)
 
-  // Listen for system theme changes when "system" is selected
   window
     .matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", () => {

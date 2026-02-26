@@ -1,13 +1,6 @@
 import { useState } from "react"
 import { DataTable, type Column } from "@/components/common/DataTable"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Modal } from "@carbon/react"
 import { exportToCsv, exportToJson } from "@/lib/export"
 
 interface QueryResultProps {
@@ -56,9 +49,9 @@ export function QueryResult({
   }
 
   return (
-    <div className="space-y-2">
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
       {executionTime !== undefined && (
-        <p className="text-sm text-muted-foreground">
+        <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
           Executed in {executionTime.toFixed(0)}ms &middot;{" "}
           {totalRows.toLocaleString()} rows
         </p>
@@ -76,32 +69,29 @@ export function QueryResult({
         }
       />
 
-      <Dialog
+      <Modal
         open={selectedCell !== null}
-        onOpenChange={(open) => !open && setSelectedCell(null)}
+        onRequestClose={() => setSelectedCell(null)}
+        modalHeading={selectedCell !== null ? columns[selectedCell.colIndex].name : ""}
+        modalLabel={selectedCell !== null ? columns[selectedCell.colIndex].type : ""}
+        passiveModal
+        size="sm"
       >
-        <DialogContent className="max-w-lg">
-          {selectedCell !== null && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {columns[selectedCell.colIndex].name}
-                </DialogTitle>
-                <DialogDescription>
-                  {columns[selectedCell.colIndex].type}
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="max-h-[60vh]">
-                <pre className="whitespace-pre-wrap break-all font-mono text-sm pr-4">
-                  {formatCellValue(
-                    rows[selectedCell.rowIndex][selectedCell.colIndex],
-                  )}
-                </pre>
-              </ScrollArea>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+        {selectedCell !== null && (
+          <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+            <pre style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+              fontFamily: "var(--cds-code-01-font-family, monospace)",
+              fontSize: "0.875rem",
+            }}>
+              {formatCellValue(
+                rows[selectedCell.rowIndex][selectedCell.colIndex],
+              )}
+            </pre>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

@@ -1,12 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import {
+  Tile,
+  TextInput,
+  Button,
+  InlineLoading,
+} from "@carbon/react"
+import { Db2Database } from "@carbon/react/icons"
 import { api } from "@/lib/api"
 import { setAuth } from "@/lib/auth"
-import { Database, Loader2 } from "lucide-react"
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -37,48 +39,59 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
       <title>Sign In - Snaplake</title>
-      <Card className="w-full max-w-sm">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <Database className="h-6 w-6 text-primary-foreground" />
+      <Tile style={{ width: "100%", maxWidth: "24rem", padding: "2rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", marginBottom: "2rem" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "3rem",
+            height: "3rem",
+            borderRadius: "0.75rem",
+            backgroundColor: "var(--cds-interactive)",
+            color: "var(--cds-text-on-color)",
+          }}>
+            <Db2Database size={24} />
           </div>
-          <CardTitle className="text-2xl">Sign in to Snaplake</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Sign in to Snaplake</h2>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <TextInput
+              id="username"
+              labelText="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin"
+              autoFocus
+            />
+            <TextInput
+              id="password"
+              type="password"
+              labelText="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {error && (
+              <p style={{ fontSize: "0.875rem", color: "var(--cds-support-error)" }}>{error}</p>
+            )}
             <Button
               type="submit"
-              className="w-full h-11"
+              style={{ width: "100%", maxWidth: "100%" }}
               disabled={isLoading || !username || !password}
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
+              {isLoading ? (
+                <InlineLoading description="Signing in..." />
+              ) : (
+                "Sign In"
+              )}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </form>
+      </Tile>
     </div>
   )
 }

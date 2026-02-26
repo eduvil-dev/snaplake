@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
-import { Database } from "lucide-react"
+import { Button } from "@carbon/react"
+import { Db2Database } from "@carbon/react/icons"
 
 interface WelcomeStepProps {
   onNext: () => void
@@ -7,20 +7,29 @@ interface WelcomeStepProps {
 
 export function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
-    <div className="flex flex-col items-center space-y-8 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-        <Database className="h-8 w-8 text-primary-foreground" />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "2rem" }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "4rem",
+        height: "4rem",
+        borderRadius: "1rem",
+        backgroundColor: "var(--cds-interactive)",
+        color: "var(--cds-text-on-color)",
+      }}>
+        <Db2Database size={32} />
       </div>
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
+      <div>
+        <h1 style={{ fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
           Welcome to Snaplake
         </h1>
-        <p className="max-w-prose text-muted-foreground">
+        <p style={{ marginTop: "0.5rem", maxWidth: "65ch", color: "var(--cds-text-secondary)" }}>
           Your self-hosted database snapshot management platform. Let's get you
           set up in a few quick steps.
         </p>
       </div>
-      <Button onClick={onNext} className="w-full h-14 text-base sm:w-auto sm:h-11 sm:px-8">
+      <Button size="lg" onClick={onNext}>
         Get Started
       </Button>
     </div>

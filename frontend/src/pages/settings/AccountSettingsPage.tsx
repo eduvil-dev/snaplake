@@ -1,17 +1,8 @@
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { CheckCircle, Loader2 } from "lucide-react"
+import { Button, Tile, TextInput, InlineLoading } from "@carbon/react"
+import { CheckmarkFilled } from "@carbon/react/icons"
 
 export function AccountSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("")
@@ -66,88 +57,89 @@ export function AccountSettingsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em" }}>
+          Account Settings
+        </h1>
+        <p style={{ color: "var(--cds-text-secondary)" }}>
           Manage your account security
         </p>
       </div>
 
-      <Card className="max-w-lg">
-        <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>
-            Update your admin account password
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-              {errors.currentPassword && (
-                <p className="text-sm text-destructive">
-                  {errors.currentPassword}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 8 characters"
-              />
-              {errors.newPassword && (
-                <p className="text-sm text-destructive">
-                  {errors.newPassword}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
+      <Tile style={{ maxWidth: "32rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Change Password</h2>
+            <p style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+              Update your admin account password
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
+            <TextInput
+              id="currentPassword"
+              type="password"
+              labelText="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              invalid={!!errors.currentPassword}
+              invalidText={errors.currentPassword}
+            />
+            <TextInput
+              id="newPassword"
+              type="password"
+              labelText="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              invalid={!!errors.newPassword}
+              invalidText={errors.newPassword}
+            />
+            <TextInput
+              id="confirmPassword"
+              type="password"
+              labelText="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              invalid={!!errors.confirmPassword}
+              invalidText={errors.confirmPassword}
+            />
+
             {errors.submit && (
-              <p className="text-sm text-destructive">{errors.submit}</p>
+              <p style={{ fontSize: "0.875rem", color: "var(--cds-support-error)" }}>
+                {errors.submit}
+              </p>
             )}
             {success && (
-              <p className="flex items-center gap-1 text-sm text-green-600">
-                <CheckCircle className="h-4 w-4" />
+              <p style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                fontSize: "0.875rem",
+                color: "var(--cds-support-success)",
+              }}>
+                <CheckmarkFilled size={16} />
                 Password changed successfully
               </p>
             )}
+
             <Button
               type="submit"
-              className="h-11 w-full"
               disabled={changeMutation.isPending}
+              style={{ width: "100%", maxWidth: "100%" }}
             >
               {changeMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <InlineLoading style={{ marginRight: "0.5rem" }} />
               )}
               Change Password
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </Tile>
     </div>
   )
 }

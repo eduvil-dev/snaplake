@@ -1,20 +1,22 @@
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react"
+  Button,
+  Tile,
+  TextInput,
+  Tag,
+  SkeletonText,
+  SkeletonPlaceholder,
+  InlineLoading,
+  RadioButton,
+  RadioButtonGroup,
+} from "@carbon/react"
+import {
+  WarningAlt,
+  CheckmarkFilled,
+  CloseFilled,
+} from "@carbon/react/icons"
 
 interface StorageSettings {
   type: string
@@ -91,32 +93,34 @@ export function StorageSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-48" />
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <SkeletonText heading width="30%" />
+        <SkeletonPlaceholder style={{ height: "12rem", width: "100%" }} />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Storage Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.025em" }}>
+          Storage Settings
+        </h1>
+        <p style={{ color: "var(--cds-text-secondary)" }}>
           Configure where Snaplake stores database snapshots
         </p>
       </div>
 
       {!isEditing ? (
         /* View mode */
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Current Configuration</CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleTest}>
+        <Tile>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Current Configuration</h2>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <Button kind="tertiary" size="sm" onClick={handleTest}>
                   {testStatus === "testing" && (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    <InlineLoading style={{ marginRight: "0.25rem" }} />
                   )}
                   Test Connection
                 </Button>
@@ -125,219 +129,196 @@ export function StorageSettingsPage() {
                 </Button>
               </div>
             </div>
-            <CardDescription>
-              {testStatus === "success" && (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-4 w-4" /> Connection successful
-                </span>
-              )}
-              {testStatus === "error" && (
-                <span className="flex items-center gap-1 text-destructive">
-                  <XCircle className="h-4 w-4" /> Connection failed
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Label className="w-32 text-muted-foreground">Type</Label>
-              <Badge variant="outline">{settings?.type}</Badge>
-            </div>
-            {settings?.type === "LOCAL" && (
-              <div className="flex items-center gap-3">
-                <Label className="w-32 text-muted-foreground">Path</Label>
-                <code className="rounded bg-muted px-2 py-1 text-sm">
-                  {settings.localPath}
-                </code>
-              </div>
+
+            {testStatus === "success" && (
+              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-success)" }}>
+                <CheckmarkFilled size={16} /> Connection successful
+              </span>
             )}
-            {settings?.type === "S3" && (
-              <>
-                <div className="flex items-center gap-3">
-                  <Label className="w-32 text-muted-foreground">Bucket</Label>
-                  <span>{settings.s3Bucket}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Label className="w-32 text-muted-foreground">Region</Label>
-                  <span>{settings.s3Region}</span>
-                </div>
-                {settings.s3Endpoint && (
-                  <div className="flex items-center gap-3">
-                    <Label className="w-32 text-muted-foreground">
-                      Endpoint
-                    </Label>
-                    <span>{settings.s3Endpoint}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <Label className="w-32 text-muted-foreground">
-                    Access Key
-                  </Label>
-                  <code className="rounded bg-muted px-2 py-1 text-sm">
-                    {settings.s3AccessKey}
+            {testStatus === "error" && (
+              <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "var(--cds-support-error)" }}>
+                <CloseFilled size={16} /> Connection failed
+              </span>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Type</span>
+                <Tag type="outline" size="sm">{settings?.type}</Tag>
+              </div>
+              {settings?.type === "LOCAL" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Path</span>
+                  <code style={{
+                    padding: "0.25rem 0.5rem",
+                    fontSize: "0.875rem",
+                    backgroundColor: "var(--cds-layer-02)",
+                  }}>
+                    {settings.localPath}
                   </code>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              {settings?.type === "S3" && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Bucket</span>
+                    <span style={{ fontSize: "0.875rem" }}>{settings.s3Bucket}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Region</span>
+                    <span style={{ fontSize: "0.875rem" }}>{settings.s3Region}</span>
+                  </div>
+                  {settings.s3Endpoint && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Endpoint</span>
+                      <span style={{ fontSize: "0.875rem" }}>{settings.s3Endpoint}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Access Key</span>
+                    <code style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.875rem",
+                      backgroundColor: "var(--cds-layer-02)",
+                    }}>
+                      {settings.s3AccessKey}
+                    </code>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </Tile>
       ) : (
         /* Edit mode */
-        <Card>
-          <CardHeader>
-            <CardTitle>Edit Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <Tile>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Edit Configuration</h2>
+
             {formData && (
               <>
                 {updateMutation.isError && (
-                  <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
+                    fontSize: "0.875rem",
+                    border: "1px solid var(--cds-support-error)",
+                    backgroundColor: "var(--cds-notification-error-background-color, rgba(218, 30, 40, 0.1))",
+                    color: "var(--cds-support-error)",
+                  }}>
+                    <WarningAlt size={16} style={{ flexShrink: 0 }} />
                     {updateMutation.error instanceof Error
                       ? updateMutation.error.message
                       : "Failed to update storage settings"}
                   </div>
                 )}
 
-                <RadioGroup
-                  value={formData.type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, type: value })
+                <RadioButtonGroup
+                  legendText="Storage Type"
+                  name="storage-type"
+                  valueSelected={formData.type}
+                  onChange={(value) =>
+                    setFormData({ ...formData, type: String(value ?? "") })
                   }
-                  className="space-y-3"
+                  orientation="vertical"
                 >
-                  <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 hover:bg-accent">
-                    <RadioGroupItem value="LOCAL" />
-                    <div>
-                      <p className="font-medium">Local Filesystem</p>
-                      <p className="text-sm text-muted-foreground">
-                        Store snapshots on the local disk
-                      </p>
-                    </div>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 hover:bg-accent">
-                    <RadioGroupItem value="S3" />
-                    <div>
-                      <p className="font-medium">S3 Compatible Storage</p>
-                      <p className="text-sm text-muted-foreground">
-                        AWS S3, MinIO, or any S3-compatible storage
-                      </p>
-                    </div>
-                  </label>
-                </RadioGroup>
+                  <RadioButton
+                    labelText="Local Filesystem — Store snapshots on the local disk"
+                    value="LOCAL"
+                    id="storage-local"
+                  />
+                  <RadioButton
+                    labelText="S3 Compatible Storage — AWS S3, MinIO, or any S3-compatible storage"
+                    value="S3"
+                    id="storage-s3"
+                  />
+                </RadioButtonGroup>
 
-                <div className="space-y-4">
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   {formData.type === "LOCAL" ? (
-                    <div className="space-y-2">
-                      <Label>Storage Path</Label>
-                      <Input
-                        value={formData.localPath ?? ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            localPath: e.target.value,
-                          })
-                        }
-                        placeholder="/data/snaplake"
-                      />
-                    </div>
+                    <TextInput
+                      id="local-path"
+                      labelText="Storage Path"
+                      value={formData.localPath ?? ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, localPath: e.target.value })
+                      }
+                      placeholder="/data/snaplake"
+                    />
                   ) : (
                     <>
-                      <div className="space-y-2">
-                        <Label>Bucket Name</Label>
-                        <Input
-                          value={formData.s3Bucket ?? ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              s3Bucket: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Region</Label>
-                        <Input
-                          value={formData.s3Region ?? ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              s3Region: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>
-                          Custom Endpoint{" "}
-                          <span className="text-muted-foreground">
-                            (optional)
-                          </span>
-                        </Label>
-                        <Input
-                          value={formData.s3Endpoint ?? ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              s3Endpoint: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Access Key</Label>
-                        <Input
-                          value={formData.s3AccessKey ?? ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              s3AccessKey: e.target.value,
-                            })
-                          }
-                          placeholder="Leave empty to keep current value"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Secret Key</Label>
-                        <Input
-                          type="password"
-                          value={formData.s3SecretKey ?? ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              s3SecretKey: e.target.value,
-                            })
-                          }
-                          placeholder="Leave empty to keep current value"
-                        />
-                      </div>
+                      <TextInput
+                        id="s3-bucket"
+                        labelText="Bucket Name"
+                        value={formData.s3Bucket ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, s3Bucket: e.target.value })
+                        }
+                      />
+                      <TextInput
+                        id="s3-region"
+                        labelText="Region"
+                        value={formData.s3Region ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, s3Region: e.target.value })
+                        }
+                      />
+                      <TextInput
+                        id="s3-endpoint"
+                        labelText="Custom Endpoint (optional)"
+                        value={formData.s3Endpoint ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, s3Endpoint: e.target.value })
+                        }
+                      />
+                      <TextInput
+                        id="s3-access-key"
+                        labelText="Access Key"
+                        value={formData.s3AccessKey ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, s3AccessKey: e.target.value })
+                        }
+                        placeholder="Leave empty to keep current value"
+                      />
+                      <TextInput
+                        id="s3-secret-key"
+                        type="password"
+                        labelText="Secret Key"
+                        value={formData.s3SecretKey ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, s3SecretKey: e.target.value })
+                        }
+                        placeholder="Leave empty to keep current value"
+                      />
                     </>
                   )}
                 </div>
 
-                <div className="flex gap-4">
+                <div style={{ display: "flex", gap: "1rem" }}>
                   <Button
-                    variant="outline"
+                    kind="tertiary"
                     onClick={() => setIsEditing(false)}
-                    className="flex-1 h-11"
+                    style={{ flex: 1 }}
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
-                    className="flex-1 h-11"
+                    style={{ flex: 1 }}
                   >
                     {updateMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <InlineLoading style={{ marginRight: "0.5rem" }} />
                     )}
                     Save Changes
                   </Button>
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Tile>
       )}
     </div>
   )
