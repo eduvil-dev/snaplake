@@ -1,0 +1,131 @@
+Snaplake uses the following third-party libraries.
+
+================================================================================
+MIT License
+================================================================================
+
+The following dependencies are licensed under the MIT License:
+https://opensource.org/licenses/MIT
+
+Frontend:
+  - React, React DOM (Meta Platforms, Inc.)
+  - CodeMirror, @codemirror/lang-sql, @codemirror/state, @codemirror/theme-one-dark, @codemirror/view (Marijn Haverbeke)
+  - @tanstack/react-query, @tanstack/react-router (Tanner Linsley)
+  - Radix UI (WorkOS)
+  - cmdk (Paco Coursey)
+  - clsx (Luke Edwards)
+  - tailwind-merge (Dany Castillo)
+  - Tailwind CSS (Tailwind Labs, Inc.)
+  - Vite (Evan You)
+  - TypeScript (Microsoft Corporation)
+  - shadcn/ui (shadcn)
+
+Backend:
+  - DuckDB JDBC (DuckDB Foundation)
+
+================================================================================
+Apache License 2.0
+================================================================================
+
+The following dependencies are licensed under the Apache License, Version 2.0:
+https://www.apache.org/licenses/LICENSE-2.0
+
+Backend:
+  - Spring Boot, Spring Framework, Spring Security, Spring Data JPA
+    Copyright (c) Pivotal, Inc. and individual contributors
+  - Kotlin, kotlin-reflect
+    Copyright (c) JetBrains s.r.o. and Kotlin Programming Language contributors
+  - Jackson (jackson-module-kotlin)
+    Copyright (c) FasterXML, LLC
+  - Liquibase
+    Copyright (c) Liquibase Inc.
+  - SQLite JDBC (org.xerial:sqlite-jdbc)
+    Copyright (c) Taro L. Saito
+  - JJWT (jjwt-api, jjwt-impl, jjwt-jackson)
+    Copyright (c) jsonwebtoken.io
+  - AWS SDK for Java v2 (S3)
+    Copyright (c) Amazon.com, Inc.
+  - Kotest
+    Copyright (c) Kotest Team
+  - MockK
+    Copyright (c) Oleksiy Pylypenko
+  - ArchUnit
+    Copyright (c) TNG Technology Consulting GmbH
+
+Frontend:
+  - class-variance-authority (Joe Bell)
+  - cronstrue (Brady Holt)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use these files except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+ISC License
+================================================================================
+
+The following dependencies are licensed under the ISC License:
+https://opensource.org/licenses/ISC
+
+Frontend:
+  - lucide-react (Lucide Contributors)
+
+================================================================================
+BSD 2-Clause License
+================================================================================
+
+The following dependencies are licensed under the BSD 2-Clause License:
+https://opensource.org/licenses/BSD-2-Clause
+
+Backend:
+  - PostgreSQL JDBC Driver
+    Copyright (c) PostgreSQL Global Development Group
+
+================================================================================
+GNU Lesser General Public License v2.1 (LGPL-2.1)
+================================================================================
+
+The following dependencies are licensed under LGPL-2.1:
+https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Backend:
+  - Hibernate ORM, Hibernate Community Dialects
+    Copyright (c) Red Hat, Inc. and individual contributors
+
+This project uses Hibernate as a library dependency without modification.
+The LGPL permits such usage under any license. Users may replace the
+Hibernate library JARs with compatible alternatives.
+
+================================================================================
+GNU General Public License v2.0 with Universal FOSS Exception
+================================================================================
+
+The following dependencies are licensed under GPL-2.0 with the
+Universal FOSS Exception, Version 1.0:
+
+Backend:
+  - MySQL Connector/J
+    Copyright (c) Oracle Corporation
+
+The Universal FOSS Exception permits use of MySQL Connector/J with
+software licensed under qualifying FOSS licenses, including the MIT License.
+See: https://oss.oracle.com/licenses/universal-foss-exception/
+
+================================================================================
+Bouncy Castle License (MIT-like)
+================================================================================
+
+The following dependencies are licensed under the Bouncy Castle License:
+https://www.bouncycastle.org/licence.html
+
+Backend:
+  - Bouncy Castle Provider (bcprov-jdk18on)
+    Copyright (c) The Legion of the Bouncy Castle Inc.

@@ -101,4 +101,4 @@ cd frontend && bun run lint
 
 ## License
 
-This project is not yet licensed. All rights reserved.
+This project is licensed under the [MIT License](LICENSE).
