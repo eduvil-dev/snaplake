@@ -15,6 +15,7 @@ data class RegisterDatasourceRequest(
     val cronExpression: String?,
     val retentionDaily: Int = 0,
     val retentionMonthly: Int = 0,
+    val includedTables: Map<String, List<String>> = emptyMap(),
 )
 
 data class UpdateDatasourceRequest(
@@ -29,6 +30,7 @@ data class UpdateDatasourceRequest(
     val cronExpression: String?,
     val retentionDaily: Int = 0,
     val retentionMonthly: Int = 0,
+    val includedTables: Map<String, List<String>> = emptyMap(),
 )
 
 data class DatasourceResponse(
@@ -43,6 +45,7 @@ data class DatasourceResponse(
     val cronExpression: String?,
     val retentionDaily: Int,
     val retentionMonthly: Int,
+    val includedTables: Map<String, List<String>>,
     val enabled: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -61,6 +64,7 @@ data class DatasourceResponse(
                 cronExpression = ds.cronExpression,
                 retentionDaily = ds.retentionPolicy.dailyMaxCount,
                 retentionMonthly = ds.retentionPolicy.monthlyMaxCount,
+                includedTables = ds.includedTables,
                 enabled = ds.enabled,
                 createdAt = ds.createdAt,
                 updatedAt = ds.updatedAt,

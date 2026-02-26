@@ -32,6 +32,8 @@ class DatasourceEntity(
     val retentionDaily: Int,
     @Column(name = "retention_monthly", nullable = false)
     val retentionMonthly: Int,
+    @Column(name = "included_tables")
+    val includedTables: String? = "{}",
     @Column(name = "enabled", nullable = false)
     val enabled: Int,
     @Column(name = "created_at", nullable = false)

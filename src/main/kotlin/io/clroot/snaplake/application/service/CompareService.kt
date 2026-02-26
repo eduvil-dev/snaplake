@@ -16,7 +16,8 @@ class CompareService(
 ) : CompareStatsUseCase,
     CompareRowsUseCase,
     CompareDiffUseCase,
-    CompareUnifiedDiffUseCase {
+    CompareUnifiedDiffUseCase,
+    CompareSchemaUseCase {
     override fun compareStats(command: CompareStatsUseCase.Command): StatsResult {
         val leftUri = resolveTableUri(command.leftSnapshotId, command.tableName)
         val rightUri = resolveTableUri(command.rightSnapshotId, command.tableName)
@@ -302,6 +303,86 @@ class CompareService(
             diffRows,
             totalRows,
             DiffSummary(added = addedCount, removed = removedCount, changed = 0),
+        )
+    }
+
+    override fun compareSchema(command: CompareSchemaUseCase.Command): SchemaChangeResult {
+        val leftSnapshot =
+            loadSnapshotPort.findById(command.leftSnapshotId)
+                ?: throw SnapshotNotFoundException(command.leftSnapshotId)
+        val rightSnapshot =
+            loadSnapshotPort.findById(command.rightSnapshotId)
+                ?: throw SnapshotNotFoundException(command.rightSnapshotId)
+
+        val storageConfig = loadStorageConfigPort.find()
+
+        val leftTableNames = leftSnapshot.tables.map { "${it.schema}.${it.table}" }.toSet()
+        val rightTableNames = rightSnapshot.tables.map { "${it.schema}.${it.table}" }.toSet()
+
+        val tablesAdded = (rightTableNames - leftTableNames).toList().sorted()
+        val tablesRemoved = (leftTableNames - rightTableNames).toList().sorted()
+        val commonTables = (leftTableNames intersect rightTableNames).sorted()
+
+        val tablesModified = mutableListOf<TableSchemaChange>()
+        val tablesUnchanged = mutableListOf<String>()
+
+        for (tableName in commonTables) {
+            val leftTable = leftSnapshot.tables.first { "${it.schema}.${it.table}" == tableName }
+            val rightTable = rightSnapshot.tables.first { "${it.schema}.${it.table}" == tableName }
+
+            val leftUri = storageProvider.getUri(leftTable.storagePath)
+            val rightUri = storageProvider.getUri(rightTable.storagePath)
+
+            val leftColumns =
+                try {
+                    queryEngine.describeTable(leftUri, storageConfig)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            val rightColumns =
+                try {
+                    queryEngine.describeTable(rightUri, storageConfig)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+
+            val leftColMap = leftColumns.associate { it.name to it.type }
+            val rightColMap = rightColumns.associate { it.name to it.type }
+
+            val columnsAdded =
+                rightColumns
+                    .filter { it.name !in leftColMap }
+                    .map { ColumnInfo(it.name, it.type) }
+
+            val columnsRemoved =
+                leftColumns
+                    .filter { it.name !in rightColMap }
+                    .map { ColumnInfo(it.name, it.type) }
+
+            val columnsTypeChanged =
+                leftColumns
+                    .filter { it.name in rightColMap && rightColMap[it.name] != it.type }
+                    .map { ColumnTypeChange(it.name, it.type, rightColMap[it.name]!!) }
+
+            if (columnsAdded.isNotEmpty() || columnsRemoved.isNotEmpty() || columnsTypeChanged.isNotEmpty()) {
+                tablesModified.add(
+                    TableSchemaChange(
+                        tableName = tableName,
+                        columnsAdded = columnsAdded,
+                        columnsRemoved = columnsRemoved,
+                        columnsTypeChanged = columnsTypeChanged,
+                    ),
+                )
+            } else {
+                tablesUnchanged.add(tableName)
+            }
+        }
+
+        return SchemaChangeResult(
+            tablesAdded = tablesAdded,
+            tablesRemoved = tablesRemoved,
+            tablesModified = tablesModified,
+            tablesUnchanged = tablesUnchanged,
         )
     }
 

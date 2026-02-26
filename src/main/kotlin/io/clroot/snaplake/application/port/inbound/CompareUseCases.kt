@@ -103,3 +103,37 @@ interface CompareUnifiedDiffUseCase {
         val offset: Int = 0,
     )
 }
+
+data class ColumnInfo(
+    val name: String,
+    val type: String,
+)
+
+data class ColumnTypeChange(
+    val name: String,
+    val leftType: String,
+    val rightType: String,
+)
+
+data class TableSchemaChange(
+    val tableName: String,
+    val columnsAdded: List<ColumnInfo>,
+    val columnsRemoved: List<ColumnInfo>,
+    val columnsTypeChanged: List<ColumnTypeChange>,
+)
+
+data class SchemaChangeResult(
+    val tablesAdded: List<String>,
+    val tablesRemoved: List<String>,
+    val tablesModified: List<TableSchemaChange>,
+    val tablesUnchanged: List<String>,
+)
+
+interface CompareSchemaUseCase {
+    fun compareSchema(command: Command): SchemaChangeResult
+
+    data class Command(
+        val leftSnapshotId: SnapshotId,
+        val rightSnapshotId: SnapshotId,
+    )
+}

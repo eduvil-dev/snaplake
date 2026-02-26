@@ -22,8 +22,12 @@ docker run -d \
   --name snaplake \
   -p 8080:8080 \
   -v snaplake-data:/app/data \
+  -e SNAPLAKE_JWT_SECRET=your-secret-key \
+  -e SNAPLAKE_ENCRYPTION_KEY=your-encryption-key \
   abcdkh1209/snaplake:latest
 ```
+
+> **Note:** Replace `your-secret-key` and `your-encryption-key` with your own secure values. These are used for JWT signing and datasource password encryption respectively. If omitted, random keys are auto-generated on each restart, which will invalidate existing sessions and encrypted data.
 
 Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard.
 
@@ -39,6 +43,8 @@ services:
       - snaplake-data:/app/data
     environment:
       SNAPLAKE_DATA_DIR: /app/data
+      SNAPLAKE_JWT_SECRET: your-secret-key
+      SNAPLAKE_ENCRYPTION_KEY: your-encryption-key
     restart: unless-stopped
 
 volumes:
@@ -57,6 +63,8 @@ services:
       - snaplake-data:/app/data
     environment:
       SNAPLAKE_DATA_DIR: /app/data
+      SNAPLAKE_JWT_SECRET: your-secret-key
+      SNAPLAKE_ENCRYPTION_KEY: your-encryption-key
     restart: unless-stopped
 
   sample-db:

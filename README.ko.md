@@ -46,8 +46,12 @@ docker run -d \
   --name snaplake \
   -p 8080:8080 \
   -v snaplake-data:/app/data \
+  -e SNAPLAKE_JWT_SECRET=your-secret-key \
+  -e SNAPLAKE_ENCRYPTION_KEY=your-encryption-key \
   abcdkh1209/snaplake:latest
 ```
+
+> **참고:** `your-secret-key`와 `your-encryption-key`를 안전한 값으로 변경하세요. 각각 JWT 서명과 데이터소스 비밀번호 암호화에 사용됩니다. 생략 시 재시작할 때마다 랜덤 키가 생성되어 기존 세션과 암호화된 데이터가 무효화됩니다.
 
 [http://localhost:8080](http://localhost:8080)을 열고 설정 마법사를 따라 진행하세요.
 

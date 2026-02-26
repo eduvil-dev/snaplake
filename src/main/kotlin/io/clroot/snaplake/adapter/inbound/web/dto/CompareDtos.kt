@@ -137,3 +137,54 @@ data class ColumnResponse(
     val name: String,
     val type: String,
 )
+
+data class CompareSchemaRequest(
+    val leftSnapshotId: String,
+    val rightSnapshotId: String,
+)
+
+data class ColumnInfoResponse(
+    val name: String,
+    val type: String,
+)
+
+data class ColumnTypeChangeResponse(
+    val name: String,
+    val leftType: String,
+    val rightType: String,
+)
+
+data class TableSchemaChangeResponse(
+    val tableName: String,
+    val columnsAdded: List<ColumnInfoResponse>,
+    val columnsRemoved: List<ColumnInfoResponse>,
+    val columnsTypeChanged: List<ColumnTypeChangeResponse>,
+)
+
+data class SchemaChangeResultResponse(
+    val tablesAdded: List<String>,
+    val tablesRemoved: List<String>,
+    val tablesModified: List<TableSchemaChangeResponse>,
+    val tablesUnchanged: List<String>,
+) {
+    companion object {
+        fun from(result: SchemaChangeResult): SchemaChangeResultResponse =
+            SchemaChangeResultResponse(
+                tablesAdded = result.tablesAdded,
+                tablesRemoved = result.tablesRemoved,
+                tablesModified =
+                    result.tablesModified.map { change ->
+                        TableSchemaChangeResponse(
+                            tableName = change.tableName,
+                            columnsAdded = change.columnsAdded.map { ColumnInfoResponse(it.name, it.type) },
+                            columnsRemoved = change.columnsRemoved.map { ColumnInfoResponse(it.name, it.type) },
+                            columnsTypeChanged =
+                                change.columnsTypeChanged.map {
+                                    ColumnTypeChangeResponse(it.name, it.leftType, it.rightType)
+                                },
+                        )
+                    },
+                tablesUnchanged = result.tablesUnchanged,
+            )
+    }
+}
