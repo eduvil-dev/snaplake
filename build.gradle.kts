@@ -7,7 +7,7 @@ plugins {
     id("org.graalvm.buildtools.native") version "0.10.5"
 }
 
-group = "com.snaplake"
+group = "io.clroot.snaplake"
 version = "0.1.0-SNAPSHOT"
 
 java {
@@ -82,8 +82,12 @@ tasks.withType<Jar> {
 
 tasks.register<Exec>("buildFrontend") {
     workingDir = file("frontend")
-    val bun = File(System.getProperty("user.home"), ".bun/bin/bun")
-        .takeIf { it.exists() }?.absolutePath ?: "bun"
+    val bun =
+        File(System.getProperty("user.home"), ".bun/bin/bun")
+            .takeIf { it.exists() }
+            ?.absolutePath
+            ?: File(System.getProperty("user.home"), ".bun/bin/bun.cmd")
+    "bun"
     commandLine(bun, "run", "build")
 }
 
