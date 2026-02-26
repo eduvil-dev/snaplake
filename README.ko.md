@@ -2,6 +2,9 @@
 
 # Snaplake
 
+[![Docker Image Version](https://img.shields.io/docker/v/abcdkh1209/snaplake?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/abcdkh1209/snaplake)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 셀프 호스팅 데이터베이스 스냅샷 관리 플랫폼. PostgreSQL과 MySQL 데이터베이스의 특정 시점 스냅샷을 Parquet 파일로 캡처하고, 로컬 또는 S3에 저장하며, DuckDB 기반 SQL로 스냅샷을 조회하고 비교할 수 있습니다.
 
 ![Dashboard](docs/screenshots/features/dashboard.png)
