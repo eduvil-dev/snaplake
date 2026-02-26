@@ -5,10 +5,13 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.*
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
 
 class S3StorageAdapter(
     private val s3Client: S3Client,
@@ -102,6 +105,21 @@ class S3StorageAdapter(
         } catch (e: NoSuchKeyException) {
             false
         }
+
+    override fun downloadToFile(
+        path: String,
+        destination: Path,
+    ) {
+        Files.createDirectories(destination.parent)
+        s3Client.getObject(
+            GetObjectRequest
+                .builder()
+                .bucket(bucket)
+                .key(path)
+                .build(),
+            ResponseTransformer.toFile(destination),
+        )
+    }
 
     override fun getUri(path: String): String = "s3://$bucket/$path"
 
