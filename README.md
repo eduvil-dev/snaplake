@@ -2,6 +2,9 @@
 
 # Snaplake
 
+[![Docker Image Version](https://img.shields.io/docker/v/abcdkh1209/snaplake?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/abcdkh1209/snaplake)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Self-hosted database snapshot management platform. Captures point-in-time snapshots from PostgreSQL and MySQL databases as Parquet files, stores them locally or on S3, and lets you query and compare snapshots with SQL powered by DuckDB.
 
 ![Dashboard](docs/screenshots/features/dashboard.png)
@@ -39,7 +42,11 @@ Compare two snapshots side-by-side with row-level diff. Instantly see added, rem
 ### Docker (Recommended)
 
 ```bash
-docker compose up --build
+docker run -d \
+  --name snaplake \
+  -p 8080:8080 \
+  -v snaplake-data:/app/data \
+  abcdkh1209/snaplake:latest
 ```
 
 Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard.
@@ -49,7 +56,7 @@ Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard.
 A demo compose file is included with a pre-configured PostgreSQL database:
 
 ```bash
-docker compose -f docker-compose.demo.yml up --build
+docker compose -f docker-compose.demo.yml up
 ```
 
 This starts Snaplake alongside a PostgreSQL instance loaded with sample data (customers, products, orders). Connect to it during setup:

@@ -2,6 +2,9 @@
 
 # Snaplake
 
+[![Docker Image Version](https://img.shields.io/docker/v/abcdkh1209/snaplake?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/abcdkh1209/snaplake)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 셀프 호스팅 데이터베이스 스냅샷 관리 플랫폼. PostgreSQL과 MySQL 데이터베이스의 특정 시점 스냅샷을 Parquet 파일로 캡처하고, 로컬 또는 S3에 저장하며, DuckDB 기반 SQL로 스냅샷을 조회하고 비교할 수 있습니다.
 
 ![Dashboard](docs/screenshots/features/dashboard.png)
@@ -39,7 +42,11 @@ DuckDB를 사용하여 모든 스냅샷에 SQL 쿼리를 실행합니다. 테이
 ### Docker (권장)
 
 ```bash
-docker compose up --build
+docker run -d \
+  --name snaplake \
+  -p 8080:8080 \
+  -v snaplake-data:/app/data \
+  abcdkh1209/snaplake:latest
 ```
 
 [http://localhost:8080](http://localhost:8080)을 열고 설정 마법사를 따라 진행하세요.
@@ -49,7 +56,7 @@ docker compose up --build
 사전 구성된 PostgreSQL 데이터베이스가 포함된 데모 compose 파일이 제공됩니다:
 
 ```bash
-docker compose -f docker-compose.demo.yml up --build
+docker compose -f docker-compose.demo.yml up
 ```
 
 Snaplake와 함께 샘플 데이터(customers, products, orders)가 로드된 PostgreSQL 인스턴스가 시작됩니다. 설정 시 다음 정보로 연결하세요:
