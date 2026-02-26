@@ -27,6 +27,7 @@ class Datasource private constructor(
     val schemas: List<String>,
     val cronExpression: String?,
     val retentionPolicy: RetentionPolicy,
+    val includedTables: Map<String, List<String>>,
     val createdAt: Instant,
     updatedAt: Instant,
     enabled: Boolean,
@@ -59,6 +60,7 @@ class Datasource private constructor(
             schemas: List<String>,
             cronExpression: String?,
             retentionPolicy: RetentionPolicy = RetentionPolicy(),
+            includedTables: Map<String, List<String>> = emptyMap(),
         ): Datasource {
             require(name.isNotBlank()) { "Datasource name must not be blank" }
             require(host.isNotBlank()) { "Host must not be blank" }
@@ -80,6 +82,7 @@ class Datasource private constructor(
                 schemas = schemas,
                 cronExpression = cronExpression,
                 retentionPolicy = retentionPolicy,
+                includedTables = includedTables,
                 enabled = true,
                 createdAt = now,
                 updatedAt = now,
@@ -98,6 +101,7 @@ class Datasource private constructor(
             schemas: List<String>,
             cronExpression: String?,
             retentionPolicy: RetentionPolicy,
+            includedTables: Map<String, List<String>> = emptyMap(),
             enabled: Boolean,
             createdAt: Instant,
             updatedAt: Instant,
@@ -114,6 +118,7 @@ class Datasource private constructor(
                 schemas,
                 cronExpression,
                 retentionPolicy,
+                includedTables,
                 createdAt,
                 updatedAt,
                 enabled,

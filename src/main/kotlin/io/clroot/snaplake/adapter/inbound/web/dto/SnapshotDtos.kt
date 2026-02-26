@@ -15,6 +15,8 @@ data class SnapshotResponse(
     val startedAt: Instant,
     val completedAt: Instant?,
     val errorMessage: String?,
+    val tags: List<String>,
+    val memo: String?,
     val tables: List<TableMetaResponse>,
 ) {
     companion object {
@@ -29,10 +31,17 @@ data class SnapshotResponse(
                 startedAt = snapshot.startedAt,
                 completedAt = snapshot.completedAt,
                 errorMessage = snapshot.errorMessage,
+                tags = snapshot.tags,
+                memo = snapshot.memo,
                 tables = snapshot.tables.map { TableMetaResponse.from(it) },
             )
     }
 }
+
+data class UpdateSnapshotMetadataRequest(
+    val tags: List<String>?,
+    val memo: String?,
+)
 
 data class TableMetaResponse(
     val schema: String,

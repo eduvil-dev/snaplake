@@ -20,6 +20,7 @@ interface RegisterDatasourceUseCase {
         val schemas: List<String>,
         val cronExpression: String?,
         val retentionPolicy: RetentionPolicy,
+        val includedTables: Map<String, List<String>> = emptyMap(),
     )
 }
 
@@ -40,7 +41,12 @@ interface UpdateDatasourceUseCase {
         val schemas: List<String>,
         val cronExpression: String?,
         val retentionPolicy: RetentionPolicy,
+        val includedTables: Map<String, List<String>> = emptyMap(),
     )
+}
+
+interface ListDatasourceTablesUseCase {
+    fun listTables(datasourceId: DatasourceId): Map<String, List<String>>
 }
 
 interface DeleteDatasourceUseCase {

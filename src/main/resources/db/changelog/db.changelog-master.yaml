@@ -267,3 +267,26 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                   defaultValue: "[]"
+
+  - changeSet:
+      id: 8-add-included-tables-to-datasources
+      author: snaplake
+      changes:
+        - addColumn:
+            tableName: datasources
+            columns:
+              - column:
+                  name: included_tables
+                  type: TEXT
+                  constraints:
+                    nullable: false
+                  defaultValue: "{}"
+
+  - changeSet:
+      id: 9-add-tags-memo-to-snapshots
+      author: snaplake
+      changes:
+        - sql:
+            sql: "ALTER TABLE snapshots ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'"
+        - sql:
+            sql: "ALTER TABLE snapshots ADD COLUMN memo TEXT"

@@ -3,6 +3,7 @@ package io.clroot.snaplake.adapter.inbound.web
 import io.clroot.snaplake.adapter.inbound.web.dto.*
 import io.clroot.snaplake.application.port.inbound.CompareDiffUseCase
 import io.clroot.snaplake.application.port.inbound.CompareRowsUseCase
+import io.clroot.snaplake.application.port.inbound.CompareSchemaUseCase
 import io.clroot.snaplake.application.port.inbound.CompareStatsUseCase
 import io.clroot.snaplake.application.port.inbound.CompareUnifiedDiffUseCase
 import io.clroot.snaplake.domain.vo.SnapshotId
@@ -19,6 +20,7 @@ class CompareController(
     private val compareRowsUseCase: CompareRowsUseCase,
     private val compareDiffUseCase: CompareDiffUseCase,
     private val compareUnifiedDiffUseCase: CompareUnifiedDiffUseCase,
+    private val compareSchemaUseCase: CompareSchemaUseCase,
 ) {
     @PostMapping("/stats")
     fun compareStats(
@@ -67,6 +69,20 @@ class CompareController(
                 ),
             )
         return ResponseEntity.ok(UnifiedDiffResponse.from(result))
+    }
+
+    @PostMapping("/schema")
+    fun compareSchema(
+        @RequestBody request: CompareSchemaRequest,
+    ): ResponseEntity<SchemaChangeResultResponse> {
+        val result =
+            compareSchemaUseCase.compareSchema(
+                CompareSchemaUseCase.Command(
+                    leftSnapshotId = SnapshotId(request.leftSnapshotId),
+                    rightSnapshotId = SnapshotId(request.rightSnapshotId),
+                ),
+            )
+        return ResponseEntity.ok(SchemaChangeResultResponse.from(result))
     }
 
     @PostMapping("/diff")

@@ -50,6 +50,7 @@ class DatasourceMapper {
             cronExpression = ds.cronExpression,
             retentionDaily = ds.retentionPolicy.dailyMaxCount,
             retentionMonthly = ds.retentionPolicy.monthlyMaxCount,
+            includedTables = objectMapper.writeValueAsString(ds.includedTables),
             enabled = if (ds.enabled) 1 else 0,
             createdAt = ds.createdAt.toString(),
             updatedAt = ds.updatedAt.toString(),
@@ -72,6 +73,9 @@ class DatasourceMapper {
                     dailyMaxCount = entity.retentionDaily,
                     monthlyMaxCount = entity.retentionMonthly,
                 ),
+            includedTables = entity.includedTables?.let {
+                objectMapper.readValue(it, object : TypeReference<Map<String, List<String>>>() {})
+            } ?: emptyMap(),
             enabled = entity.enabled == 1,
             createdAt = Instant.parse(entity.createdAt),
             updatedAt = Instant.parse(entity.updatedAt),
@@ -119,6 +123,8 @@ class SnapshotMapper {
                 startedAt = snapshot.startedAt.toString(),
                 completedAt = snapshot.completedAt?.toString(),
                 errorMessage = snapshot.errorMessage,
+                tags = objectMapper.writeValueAsString(snapshot.tags),
+                memo = snapshot.memo,
             )
         snapshot.tables.forEach { table ->
             entity.tables.add(
@@ -147,6 +153,10 @@ class SnapshotMapper {
             status = SnapshotStatus.valueOf(entity.status),
             completedAt = entity.completedAt?.let { Instant.parse(it) },
             errorMessage = entity.errorMessage,
+            tags = entity.tags?.let {
+                objectMapper.readValue(it, object : TypeReference<List<String>>() {})
+            } ?: emptyList(),
+            memo = entity.memo,
             tables =
                 entity.tables.map { tableEntity ->
                     TableMeta(

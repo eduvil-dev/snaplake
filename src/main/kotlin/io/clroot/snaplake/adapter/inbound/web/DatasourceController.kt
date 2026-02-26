@@ -20,6 +20,7 @@ class DatasourceController(
     private val deleteDatasourceUseCase: DeleteDatasourceUseCase,
     private val getDatasourceUseCase: GetDatasourceUseCase,
     private val testDatasourceConnectionUseCase: TestDatasourceConnectionUseCase,
+    private val listDatasourceTablesUseCase: ListDatasourceTablesUseCase,
 ) {
     @GetMapping
     fun getAll(): ResponseEntity<List<DatasourceResponse>> {
@@ -56,6 +57,7 @@ class DatasourceController(
                             dailyMaxCount = request.retentionDaily,
                             monthlyMaxCount = request.retentionMonthly,
                         ),
+                    includedTables = request.includedTables,
                 ),
             )
         return ResponseEntity.status(HttpStatus.CREATED).body(DatasourceResponse.from(datasource))
@@ -84,6 +86,7 @@ class DatasourceController(
                             dailyMaxCount = request.retentionDaily,
                             monthlyMaxCount = request.retentionMonthly,
                         ),
+                    includedTables = request.includedTables,
                 ),
             )
         return ResponseEntity.ok(DatasourceResponse.from(datasource))
@@ -103,5 +106,13 @@ class DatasourceController(
     ): ResponseEntity<ConnectionTestResponse> {
         val result = testDatasourceConnectionUseCase.test(DatasourceId(id))
         return ResponseEntity.ok(ConnectionTestResponse(success = result.success, message = result.message))
+    }
+
+    @GetMapping("/{id}/tables")
+    fun listTables(
+        @PathVariable id: String,
+    ): ResponseEntity<Map<String, List<String>>> {
+        val tables = listDatasourceTablesUseCase.listTables(DatasourceId(id))
+        return ResponseEntity.ok(tables)
     }
 }
