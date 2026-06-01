@@ -26,6 +26,13 @@ interface StorageSettings {
   s3Endpoint: string | null
   s3AccessKey: string | null
   s3SecretKey: string | null
+  smbHost: string | null
+  smbPort: number | null
+  smbShare: string | null
+  smbPath: string | null
+  smbDomain: string | null
+  smbUsername: string | null
+  smbPassword: string | null
 }
 
 interface StorageTestResponse {
@@ -49,6 +56,15 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+function blankToNull(value: string | null): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+function validPortOrNull(value: number | null): number | null {
+  return value !== null && Number.isFinite(value) ? value : null
+}
+
 export function StorageSettingsPage() {
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
@@ -63,7 +79,7 @@ export function StorageSettingsPage() {
   const { data: cacheInfo } = useQuery({
     queryKey: ["storage-cache"],
     queryFn: () => api.get<CacheInfo>("/api/storage/cache"),
-    enabled: settings?.type === "S3",
+    enabled: settings?.type === "S3" || settings?.type === "SMB",
   })
 
   const clearCacheMutation = useMutation({
@@ -87,6 +103,13 @@ export function StorageSettingsPage() {
         s3Endpoint: data.type === "S3" ? data.s3Endpoint : null,
         s3AccessKey: data.type === "S3" ? data.s3AccessKey : null,
         s3SecretKey: data.type === "S3" ? data.s3SecretKey : null,
+        smbHost: data.type === "SMB" ? blankToNull(data.smbHost) : null,
+        smbPort: data.type === "SMB" ? validPortOrNull(data.smbPort) : null,
+        smbShare: data.type === "SMB" ? blankToNull(data.smbShare) : null,
+        smbPath: data.type === "SMB" ? blankToNull(data.smbPath) : null,
+        smbDomain: data.type === "SMB" ? blankToNull(data.smbDomain) : null,
+        smbUsername: data.type === "SMB" ? blankToNull(data.smbUsername) : null,
+        smbPassword: data.type === "SMB" ? data.smbPassword || null : null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storage-settings"] })
@@ -110,6 +133,7 @@ export function StorageSettingsPage() {
         ...settings,
         s3AccessKey: "",
         s3SecretKey: "",
+        smbPassword: "",
       })
     }
     setIsEditing(true)
@@ -216,6 +240,43 @@ export function StorageSettingsPage() {
                   </div>
                 </>
               )}
+              {settings?.type === "SMB" && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Host</span>
+                    <span style={{ fontSize: "0.875rem" }}>
+                      {settings.smbHost}
+                      {settings.smbPort && settings.smbPort !== 445 && `:${settings.smbPort}`}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Share</span>
+                    <span style={{ fontSize: "0.875rem" }}>{settings.smbShare}</span>
+                  </div>
+                  {settings.smbPath && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Path</span>
+                      <span style={{ fontSize: "0.875rem" }}>{settings.smbPath}</span>
+                    </div>
+                  )}
+                  {settings.smbDomain && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Domain</span>
+                      <span style={{ fontSize: "0.875rem" }}>{settings.smbDomain}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ width: "8rem", color: "var(--cds-text-secondary)", fontSize: "0.875rem" }}>Username</span>
+                    <code style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.875rem",
+                      backgroundColor: "var(--cds-layer-02)",
+                    }}>
+                      {settings.smbUsername ?? "Guest"}
+                    </code>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </Tile>
@@ -264,10 +325,15 @@ export function StorageSettingsPage() {
                     value="S3"
                     id="storage-s3"
                   />
+                  <RadioButton
+                    labelText="SMB Network Share — NAS or Windows file server via SMB/CIFS"
+                    value="SMB"
+                    id="storage-smb"
+                  />
                 </RadioButtonGroup>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {formData.type === "LOCAL" ? (
+                  {formData.type === "LOCAL" && (
                     <TextInput
                       id="local-path"
                       labelText="Storage Path"
@@ -277,7 +343,8 @@ export function StorageSettingsPage() {
                       }
                       placeholder="/data/snaplake"
                     />
-                  ) : (
+                  )}
+                  {formData.type === "S3" && (
                     <>
                       <TextInput
                         id="s3-bucket"
@@ -319,6 +386,77 @@ export function StorageSettingsPage() {
                         value={formData.s3SecretKey ?? ""}
                         onChange={(e) =>
                           setFormData({ ...formData, s3SecretKey: e.target.value })
+                        }
+                        placeholder="Leave empty to keep current value"
+                      />
+                    </>
+                  )}
+                  {formData.type === "SMB" && (
+                    <>
+                      <TextInput
+                        id="smb-host"
+                        labelText="Host"
+                        value={formData.smbHost ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbHost: e.target.value })
+                        }
+                        placeholder="192.168.1.100 or nas.local"
+                      />
+                      <TextInput
+                        id="smb-port"
+                        labelText="Port (optional, default 445)"
+                        value={formData.smbPort?.toString() ?? ""}
+                        onChange={(e) => {
+                          const port = parseInt(e.target.value, 10)
+                          setFormData({
+                            ...formData,
+                            smbPort: Number.isNaN(port) ? null : port,
+                          })
+                        }}
+                        placeholder="445"
+                      />
+                      <TextInput
+                        id="smb-share"
+                        labelText="Share Name"
+                        value={formData.smbShare ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbShare: e.target.value })
+                        }
+                        placeholder="snapshots"
+                      />
+                      <TextInput
+                        id="smb-path"
+                        labelText="Sub Path (optional)"
+                        value={formData.smbPath ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbPath: e.target.value })
+                        }
+                        placeholder="backups/snaplake"
+                      />
+                      <TextInput
+                        id="smb-domain"
+                        labelText="Domain (optional)"
+                        value={formData.smbDomain ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbDomain: e.target.value })
+                        }
+                        placeholder="WORKGROUP"
+                      />
+                      <TextInput
+                        id="smb-username"
+                        labelText="Username (empty for guest access)"
+                        value={formData.smbUsername ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbUsername: e.target.value })
+                        }
+                      />
+                      <TextInput
+                        id="smb-password"
+                        type="password"
+                        labelText="Password"
+                        value={formData.smbPassword ?? ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smbPassword: e.target.value })
                         }
                         placeholder="Leave empty to keep current value"
                       />
