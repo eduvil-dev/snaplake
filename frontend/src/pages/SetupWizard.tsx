@@ -33,6 +33,13 @@ export function SetupWizard() {
     s3Endpoint: "",
     s3AccessKey: "",
     s3SecretKey: "",
+    smbHost: "",
+    smbPort: "",
+    smbShare: "",
+    smbPath: "",
+    smbDomain: "",
+    smbUsername: "",
+    smbPassword: "",
   })
 
   const [datasourceData, setDatasourceData] = useState<DatasourceData>({
@@ -70,6 +77,30 @@ export function SetupWizard() {
           storageData.storageType === "S3" ? storageData.s3AccessKey : null,
         s3SecretKey:
           storageData.storageType === "S3" ? storageData.s3SecretKey : null,
+        smbHost:
+          storageData.storageType === "SMB" ? storageData.smbHost || null : null,
+        smbPort:
+          storageData.storageType === "SMB" && storageData.smbPort
+            ? parseInt(storageData.smbPort, 10)
+            : null,
+        smbShare:
+          storageData.storageType === "SMB" ? storageData.smbShare || null : null,
+        smbPath:
+          storageData.storageType === "SMB" && storageData.smbPath
+            ? storageData.smbPath
+            : null,
+        smbDomain:
+          storageData.storageType === "SMB" && storageData.smbDomain
+            ? storageData.smbDomain
+            : null,
+        smbUsername:
+          storageData.storageType === "SMB" && storageData.smbUsername
+            ? storageData.smbUsername
+            : null,
+        smbPassword:
+          storageData.storageType === "SMB" && storageData.smbPassword
+            ? storageData.smbPassword
+            : null,
       })
 
       const loginResult = await api.post<{ token: string; expiresAt: string }>(

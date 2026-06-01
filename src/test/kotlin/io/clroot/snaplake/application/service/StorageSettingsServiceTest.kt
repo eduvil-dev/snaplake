@@ -26,6 +26,30 @@ class StorageSettingsServiceTest :
             clearAllMocks()
         }
 
+        fun smbCommand(
+            host: String? = "nas.local",
+            share: String? = "snapshots",
+            domain: String? = "WORKGROUP",
+            username: String? = "snaplake",
+            password: String? = "secret",
+        ): UpdateStorageSettingsUseCase.Command =
+            UpdateStorageSettingsUseCase.Command(
+                storageType = StorageType.SMB,
+                localPath = null,
+                s3Bucket = null,
+                s3Region = null,
+                s3Endpoint = null,
+                s3AccessKey = null,
+                s3SecretKey = null,
+                smbHost = host,
+                smbPort = 445,
+                smbShare = share,
+                smbPath = "snaplake",
+                smbDomain = domain,
+                smbUsername = username,
+                smbPassword = password,
+            )
+
         describe("getSettings") {
             it("저장된 설정을 반환한다") {
                 val config = StorageConfig.local("/data/snapshots")
@@ -60,6 +84,13 @@ class StorageSettingsServiceTest :
                             s3Endpoint = null,
                             s3AccessKey = null,
                             s3SecretKey = null,
+                            smbHost = null,
+                            smbPort = null,
+                            smbShare = null,
+                            smbPath = null,
+                            smbDomain = null,
+                            smbUsername = null,
+                            smbPassword = null,
                         ),
                     )
 
@@ -82,6 +113,13 @@ class StorageSettingsServiceTest :
                             s3Endpoint = "https://s3.example.com",
                             s3AccessKey = "access",
                             s3SecretKey = "secret",
+                            smbHost = null,
+                            smbPort = null,
+                            smbShare = null,
+                            smbPath = null,
+                            smbDomain = null,
+                            smbUsername = null,
+                            smbPassword = null,
                         ),
                     )
 
@@ -112,6 +150,13 @@ class StorageSettingsServiceTest :
                             s3Endpoint = null,
                             s3AccessKey = null,
                             s3SecretKey = null,
+                            smbHost = null,
+                            smbPort = null,
+                            smbShare = null,
+                            smbPath = null,
+                            smbDomain = null,
+                            smbUsername = null,
+                            smbPassword = null,
                         ),
                     )
 
@@ -120,6 +165,59 @@ class StorageSettingsServiceTest :
                 result.s3Region shouldBe "us-west-2"
                 result.s3AccessKey shouldBe "existing-access-key"
                 result.s3SecretKey shouldBe "existing-secret-key"
+            }
+
+            it("SMB 설정을 저장한다") {
+                every { loadStorageConfigPort.find() } returns null
+                every { saveStorageConfigPort.save(any()) } answers { firstArg() }
+
+                val result = sut.update(smbCommand())
+
+                result.type shouldBe StorageType.SMB
+                result.smbHost shouldBe "nas.local"
+                result.smbShare shouldBe "snapshots"
+                result.smbUsername shouldBe "snaplake"
+                result.smbPassword shouldBe "secret"
+                verify { storageProviderConfig.refresh() }
+            }
+
+            it("SMB 업데이트 시 같은 계정이면 빈 비밀번호는 기존 값을 유지한다") {
+                val existingConfig =
+                    StorageConfig.smb(
+                        host = "nas.local",
+                        share = "snapshots",
+                        path = "snaplake",
+                        domain = "WORKGROUP",
+                        username = "snaplake",
+                        password = "existing-password",
+                    )
+                every { loadStorageConfigPort.find() } returns existingConfig
+                every { saveStorageConfigPort.save(any()) } answers { firstArg() }
+
+                val result = sut.update(smbCommand(password = ""))
+
+                result.smbUsername shouldBe "snaplake"
+                result.smbPassword shouldBe "existing-password"
+            }
+
+            it("SMB 업데이트 시 사용자명이 비면 게스트 접속으로 전환하고 기존 비밀번호를 제거한다") {
+                val existingConfig =
+                    StorageConfig.smb(
+                        host = "nas.local",
+                        share = "snapshots",
+                        path = "snaplake",
+                        domain = "WORKGROUP",
+                        username = "snaplake",
+                        password = "existing-password",
+                    )
+                every { loadStorageConfigPort.find() } returns existingConfig
+                every { saveStorageConfigPort.save(any()) } answers { firstArg() }
+
+                val result = sut.update(smbCommand(domain = "", username = "", password = ""))
+
+                result.smbDomain shouldBe null
+                result.smbUsername shouldBe null
+                result.smbPassword shouldBe null
             }
         }
 
