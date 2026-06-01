@@ -64,6 +64,10 @@ class SetupController(
     fun testStorage(
         @RequestBody @Valid request: TestStorageRequest,
     ): ResponseEntity<StorageTestResponse> {
+        if (getSetupStatusUseCase.getStatus().initialized) {
+            throw IllegalArgumentException("Setup storage test is only available before initialization")
+        }
+
         val storageType =
             try {
                 StorageType.valueOf(request.storageType.uppercase())
@@ -98,6 +102,10 @@ class SetupController(
                 }
 
                 StorageType.SMB -> {
+                    if (request.smbPort != null && request.smbPort != 445) {
+                        throw IllegalArgumentException("Custom SMB ports can be tested after setup")
+                    }
+
                     val host =
                         request.smbHost
                             ?: throw IllegalArgumentException("SMB host is required for SMB storage")

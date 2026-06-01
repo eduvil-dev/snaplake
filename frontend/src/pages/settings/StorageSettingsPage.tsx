@@ -406,12 +406,13 @@ export function StorageSettingsPage() {
                         id="smb-port"
                         labelText="Port (optional, default 445)"
                         value={formData.smbPort?.toString() ?? ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const port = parseInt(e.target.value, 10)
                           setFormData({
                             ...formData,
-                            smbPort: e.target.value ? Number(e.target.value) : null,
+                            smbPort: Number.isNaN(port) ? null : port,
                           })
-                        }
+                        }}
                         placeholder="445"
                       />
                       <TextInput

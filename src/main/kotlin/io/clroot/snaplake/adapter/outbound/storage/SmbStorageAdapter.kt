@@ -11,6 +11,7 @@ import com.hierynomus.smbj.SmbConfig
 import com.hierynomus.smbj.auth.AuthenticationContext
 import com.hierynomus.smbj.share.DiskShare
 import io.clroot.snaplake.application.port.outbound.StorageProvider
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.util.EnumSet
 import java.util.concurrent.TimeUnit
@@ -30,6 +31,7 @@ class SmbStorageAdapter private constructor(
                 .withSoTimeout(30, TimeUnit.SECONDS)
                 .build(),
         )
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private fun <T> withShare(action: (DiskShare) -> T): T {
         val connection = client.connect(host, port)
@@ -115,7 +117,6 @@ class SmbStorageAdapter private constructor(
             val smbPath = resolvePath(prefix)
             if (smbPath.isNotEmpty() && !share.folderExists(smbPath)) return@withShare emptyList()
             listRecursive(share, smbPath)
-                .map { it.replace("\\", "/") }
                 .map { fullPath ->
                     if (basePath.isEmpty()) {
                         fullPath
@@ -205,7 +206,8 @@ class SmbStorageAdapter private constructor(
                 share.list("")
             }
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log.warn("SMB connection test failed for host '{}', share '{}'", host, shareName, e)
             false
         }
 

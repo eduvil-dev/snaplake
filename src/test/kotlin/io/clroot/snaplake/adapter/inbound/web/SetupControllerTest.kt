@@ -70,4 +70,62 @@ class SetupControllerTest {
                 }
         }
     }
+
+    @Nested
+    @DisplayName("POST /api/setup/test-storage")
+    inner class TestStorage {
+        @Test
+        fun `초기화 전 SMB 테스트에서 커스텀 포트는 거부한다`() {
+            mockMvc
+                .post("/api/setup/test-storage") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """
+                        {
+                            "storageType": "SMB",
+                            "smbHost": "nas.local",
+                            "smbPort": 1445,
+                            "smbShare": "snapshots"
+                        }
+                        """.trimIndent()
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.error.code") { value("BAD_REQUEST") }
+                }
+        }
+
+        @Test
+        fun `초기화 후에는 setup storage test를 거부한다`() {
+            mockMvc
+                .post("/api/setup/initialize") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """
+                        {
+                            "adminUsername": "admin",
+                            "adminPassword": "password123",
+                            "storageType": "LOCAL",
+                            "localPath": "./data/snapshots"
+                        }
+                        """.trimIndent()
+                }.andExpect {
+                    status { isOk() }
+                }
+
+            mockMvc
+                .post("/api/setup/test-storage") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """
+                        {
+                            "storageType": "LOCAL",
+                            "localPath": "./data/snapshots"
+                        }
+                        """.trimIndent()
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.error.code") { value("BAD_REQUEST") }
+                }
+        }
+    }
 }
