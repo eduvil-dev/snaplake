@@ -10,13 +10,20 @@ import { CheckmarkFilled, ErrorFilled } from "@carbon/react/icons"
 import { api } from "@/lib/api"
 
 export interface StorageData {
-  storageType: "LOCAL" | "S3"
+  storageType: "LOCAL" | "S3" | "SMB"
   localPath: string
   s3Bucket: string
   s3Region: string
   s3Endpoint: string
   s3AccessKey: string
   s3SecretKey: string
+  smbHost: string
+  smbPort: string
+  smbShare: string
+  smbPath: string
+  smbDomain: string
+  smbUsername: string
+  smbPassword: string
 }
 
 interface StorageStepProps {
@@ -37,12 +44,25 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
       if (!data.localPath.trim()) {
         newErrors.localPath = "Path is required"
       }
-    } else {
+    } else if (data.storageType === "S3") {
       if (!data.s3Bucket.trim()) {
         newErrors.s3Bucket = "Bucket name is required"
       }
       if (!data.s3Region.trim()) {
         newErrors.s3Region = "Region is required"
+      }
+    } else {
+      if (!data.smbHost.trim()) {
+        newErrors.smbHost = "Host is required"
+      }
+      if (!data.smbShare.trim()) {
+        newErrors.smbShare = "Share name is required"
+      }
+      if (data.smbPort.trim()) {
+        const port = Number(data.smbPort)
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+          newErrors.smbPort = "Port must be between 1 and 65535"
+        }
       }
     }
 
@@ -63,6 +83,16 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
         s3Endpoint: data.s3Endpoint || null,
         s3AccessKey: data.s3AccessKey || null,
         s3SecretKey: data.s3SecretKey || null,
+        smbHost: data.storageType === "SMB" ? data.smbHost || null : null,
+        smbPort:
+          data.storageType === "SMB" && data.smbPort
+            ? parseInt(data.smbPort, 10)
+            : null,
+        smbShare: data.storageType === "SMB" ? data.smbShare || null : null,
+        smbPath: data.storageType === "SMB" ? data.smbPath || null : null,
+        smbDomain: data.storageType === "SMB" ? data.smbDomain || null : null,
+        smbUsername: data.storageType === "SMB" ? data.smbUsername || null : null,
+        smbPassword: data.storageType === "SMB" ? data.smbPassword || null : null,
       })
       setTestStatus(res.success ? "success" : "error")
     } catch {
@@ -90,16 +120,17 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
         name="storageType"
         valueSelected={data.storageType}
         onChange={(value) =>
-          onChange({ ...data, storageType: value as "LOCAL" | "S3" })
+          onChange({ ...data, storageType: value as "LOCAL" | "S3" | "SMB" })
         }
         orientation="vertical"
       >
         <RadioButton labelText="Local Filesystem" value="LOCAL" id="storage-local" />
         <RadioButton labelText="S3 Compatible Storage" value="S3" id="storage-s3" />
+        <RadioButton labelText="SMB Network Share" value="SMB" id="storage-smb" />
       </RadioButtonGroup>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {data.storageType === "LOCAL" ? (
+        {data.storageType === "LOCAL" && (
           <TextInput
             id="localPath"
             labelText="Storage Path"
@@ -109,7 +140,8 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
             invalid={!!errors.localPath}
             invalidText={errors.localPath}
           />
-        ) : (
+        )}
+        {data.storageType === "S3" && (
           <>
             <TextInput
               id="s3Bucket"
@@ -148,6 +180,64 @@ export function StorageStep({ data, onChange, onNext, onBack }: StorageStepProps
               labelText="Secret Key"
               value={data.s3SecretKey}
               onChange={(e) => onChange({ ...data, s3SecretKey: e.target.value })}
+            />
+          </>
+        )}
+        {data.storageType === "SMB" && (
+          <>
+            <TextInput
+              id="smbHost"
+              labelText="Host"
+              value={data.smbHost}
+              onChange={(e) => onChange({ ...data, smbHost: e.target.value })}
+              placeholder="192.168.1.100 or nas.local"
+              invalid={!!errors.smbHost}
+              invalidText={errors.smbHost}
+            />
+            <TextInput
+              id="smbPort"
+              labelText="Port (optional, default 445)"
+              value={data.smbPort}
+              onChange={(e) => onChange({ ...data, smbPort: e.target.value })}
+              placeholder="445"
+              invalid={!!errors.smbPort}
+              invalidText={errors.smbPort}
+            />
+            <TextInput
+              id="smbShare"
+              labelText="Share Name"
+              value={data.smbShare}
+              onChange={(e) => onChange({ ...data, smbShare: e.target.value })}
+              placeholder="snapshots"
+              invalid={!!errors.smbShare}
+              invalidText={errors.smbShare}
+            />
+            <TextInput
+              id="smbPath"
+              labelText="Sub Path (optional)"
+              value={data.smbPath}
+              onChange={(e) => onChange({ ...data, smbPath: e.target.value })}
+              placeholder="backups/snaplake"
+            />
+            <TextInput
+              id="smbDomain"
+              labelText="Domain (optional)"
+              value={data.smbDomain}
+              onChange={(e) => onChange({ ...data, smbDomain: e.target.value })}
+              placeholder="WORKGROUP"
+            />
+            <TextInput
+              id="smbUsername"
+              labelText="Username (empty for guest access)"
+              value={data.smbUsername}
+              onChange={(e) => onChange({ ...data, smbUsername: e.target.value })}
+            />
+            <TextInput
+              id="smbPassword"
+              type="password"
+              labelText="Password"
+              value={data.smbPassword}
+              onChange={(e) => onChange({ ...data, smbPassword: e.target.value })}
             />
           </>
         )}

@@ -56,6 +56,15 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+function blankToNull(value: string | null): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+function validPortOrNull(value: number | null): number | null {
+  return value !== null && Number.isFinite(value) ? value : null
+}
+
 export function StorageSettingsPage() {
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
@@ -94,13 +103,13 @@ export function StorageSettingsPage() {
         s3Endpoint: data.type === "S3" ? data.s3Endpoint : null,
         s3AccessKey: data.type === "S3" ? data.s3AccessKey : null,
         s3SecretKey: data.type === "S3" ? data.s3SecretKey : null,
-        smbHost: data.type === "SMB" ? data.smbHost : null,
-        smbPort: data.type === "SMB" ? data.smbPort : null,
-        smbShare: data.type === "SMB" ? data.smbShare : null,
-        smbPath: data.type === "SMB" ? data.smbPath : null,
-        smbDomain: data.type === "SMB" ? data.smbDomain : null,
-        smbUsername: data.type === "SMB" ? data.smbUsername : null,
-        smbPassword: data.type === "SMB" ? data.smbPassword : null,
+        smbHost: data.type === "SMB" ? blankToNull(data.smbHost) : null,
+        smbPort: data.type === "SMB" ? validPortOrNull(data.smbPort) : null,
+        smbShare: data.type === "SMB" ? blankToNull(data.smbShare) : null,
+        smbPath: data.type === "SMB" ? blankToNull(data.smbPath) : null,
+        smbDomain: data.type === "SMB" ? blankToNull(data.smbDomain) : null,
+        smbUsername: data.type === "SMB" ? blankToNull(data.smbUsername) : null,
+        smbPassword: data.type === "SMB" ? data.smbPassword || null : null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storage-settings"] })

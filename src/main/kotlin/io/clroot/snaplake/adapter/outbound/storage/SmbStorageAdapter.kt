@@ -47,8 +47,12 @@ class SmbStorageAdapter private constructor(
     }
 
     private fun resolvePath(path: String): String {
-        val normalized = path.replace("/", "\\").trimStart('\\')
-        return if (basePath.isEmpty()) normalized else "$basePath\\$normalized"
+        val normalized = normalizeRelativePath(path)
+        return when {
+            basePath.isEmpty() -> normalized
+            normalized.isEmpty() -> basePath
+            else -> "$basePath\\$normalized"
+        }
     }
 
     private fun ensureParentDir(
@@ -109,7 +113,7 @@ class SmbStorageAdapter private constructor(
     override fun list(prefix: String): List<String> {
         return withShare { share ->
             val smbPath = resolvePath(prefix)
-            if (!share.folderExists(smbPath)) return@withShare emptyList()
+            if (smbPath.isNotEmpty() && !share.folderExists(smbPath)) return@withShare emptyList()
             listRecursive(share, smbPath)
                 .map { it.replace("\\", "/") }
                 .map { fullPath ->
@@ -155,6 +159,7 @@ class SmbStorageAdapter private constructor(
     override fun deleteAll(prefix: String) {
         withShare { share ->
             val smbPath = resolvePath(prefix)
+            require(smbPath.isNotEmpty()) { "Refusing to delete SMB share root" }
             if (share.folderExists(smbPath)) {
                 deleteRecursive(share, smbPath)
             }
@@ -190,7 +195,8 @@ class SmbStorageAdapter private constructor(
 
     override fun getUri(path: String): String {
         val smbPath = resolvePath(path).replace("\\", "/")
-        return "smb://$host/$shareName/$smbPath"
+        val authority = if (port == DEFAULT_SMB_PORT) host else "$host:$port"
+        return "smb://$authority/$shareName/$smbPath"
     }
 
     override fun testConnection(): Boolean =
@@ -206,6 +212,28 @@ class SmbStorageAdapter private constructor(
     companion object {
         private const val DEFAULT_SMB_PORT = 445
 
+        private fun normalizeRelativePath(path: String): String {
+            val parts = ArrayDeque<String>()
+            val normalized = path.replace("/", "\\")
+
+            for (rawPart in normalized.split('\\')) {
+                if (rawPart.isEmpty() || rawPart == ".") continue
+
+                require(!rawPart.contains('\u0000') && !rawPart.contains(':')) {
+                    "Invalid SMB path segment: $path"
+                }
+
+                if (rawPart == "..") {
+                    require(parts.isNotEmpty()) { "Path traversal detected: $path" }
+                    parts.removeLast()
+                } else {
+                    parts.addLast(rawPart)
+                }
+            }
+
+            return parts.joinToString("\\")
+        }
+
         fun create(
             host: String,
             share: String,
@@ -215,23 +243,40 @@ class SmbStorageAdapter private constructor(
             username: String? = null,
             password: String? = null,
         ): SmbStorageAdapter {
+            val normalizedHost = host.trim()
+            val normalizedShare = share.trim()
+            val normalizedUsername = username?.trim()?.takeIf { it.isNotBlank() }
+            val normalizedDomain = domain?.trim()?.takeIf { it.isNotBlank() }
+
+            require(normalizedHost.isNotBlank()) { "SMB host must not be blank" }
+            require(normalizedShare.isNotBlank()) { "SMB share must not be blank" }
+            require('/' !in normalizedShare && '\\' !in normalizedShare) {
+                "SMB share must not contain path separators"
+            }
+            require(port == null || port in 1..65535) { "SMB port must be between 1 and 65535" }
+
             val authContext =
-                if (username != null && password != null) {
+                if (normalizedUsername != null) {
                     AuthenticationContext(
-                        username,
-                        password.toCharArray(),
-                        domain,
+                        normalizedUsername,
+                        password?.toCharArray() ?: CharArray(0),
+                        normalizedDomain,
                     )
                 } else {
                     AuthenticationContext.guest()
                 }
 
-            val basePath = path?.replace("/", "\\")?.trim('\\') ?: ""
+            val basePath =
+                path
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { normalizeRelativePath(it) }
+                    ?: ""
 
             return SmbStorageAdapter(
-                host = host,
+                host = normalizedHost,
                 port = port ?: DEFAULT_SMB_PORT,
-                shareName = share,
+                shareName = normalizedShare,
                 basePath = basePath,
                 authContext = authContext,
             )

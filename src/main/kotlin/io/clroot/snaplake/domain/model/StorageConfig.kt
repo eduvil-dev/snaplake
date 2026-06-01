@@ -59,16 +59,31 @@ class StorageConfig private constructor(
             username: String? = null,
             password: String? = null,
         ): StorageConfig {
-            require(host.isNotBlank()) { "SMB host must not be blank" }
-            require(share.isNotBlank()) { "SMB share must not be blank" }
+            val normalizedHost = host.trim()
+            val normalizedShare = share.trim()
+            val normalizedPath = path?.trim()?.takeIf { it.isNotBlank() }
+            val normalizedDomain = domain?.trim()?.takeIf { it.isNotBlank() }
+            val normalizedUsername = username?.trim()?.takeIf { it.isNotBlank() }
+
+            require(normalizedHost.isNotBlank()) { "SMB host must not be blank" }
+            require(normalizedShare.isNotBlank()) { "SMB share must not be blank" }
+            require('/' !in normalizedShare && '\\' !in normalizedShare) {
+                "SMB share must not contain path separators"
+            }
+            require(port == null || port in 1..65535) { "SMB port must be between 1 and 65535" }
+            require(normalizedPath == null || normalizedPath.split('/', '\\').none { it == ".." }) {
+                "SMB path must not contain path traversal segments"
+            }
+
             return StorageConfig(
                 type = StorageType.SMB,
                 localPath = null,
                 s3Bucket = null, s3Region = null, s3Endpoint = null,
                 s3AccessKey = null, s3SecretKey = null,
-                smbHost = host, smbPort = port, smbShare = share,
-                smbPath = path, smbDomain = domain,
-                smbUsername = username, smbPassword = password,
+                smbHost = normalizedHost, smbPort = port, smbShare = normalizedShare,
+                smbPath = normalizedPath, smbDomain = normalizedDomain,
+                smbUsername = normalizedUsername,
+                smbPassword = if (normalizedUsername == null) null else password?.takeIf { it.isNotEmpty() },
             )
         }
 
