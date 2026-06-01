@@ -1,6 +1,5 @@
 package io.clroot.snaplake.adapter.inbound.web
 
-import io.clroot.snaplake.application.port.outbound.StorageProvider
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -9,7 +8,6 @@ import javax.sql.DataSource
 @RestController
 class HealthController(
     private val dataSource: DataSource,
-    private val storageProvider: StorageProvider,
 ) {
     @GetMapping("/health")
     fun health(): ResponseEntity<Map<String, String>> = ResponseEntity.ok(mapOf("status" to "UP"))
@@ -31,19 +29,12 @@ class HealthController(
             }
         checks["database"] = if (dbHealthy) "UP" else "DOWN"
 
-        val storageHealthy =
-            try {
-                storageProvider.testConnection()
-            } catch (e: Exception) {
-                false
-            }
-        checks["storage"] = if (storageHealthy) "UP" else "DOWN"
+        checks["storage"] = "NOT_CHECKED"
 
-        val allHealthy = dbHealthy && storageHealthy
-        checks["status"] = if (allHealthy) "UP" else "DOWN"
+        checks["status"] = if (dbHealthy) "UP" else "DOWN"
 
         val status =
-            if (allHealthy) {
+            if (dbHealthy) {
                 ResponseEntity.ok()
             } else {
                 ResponseEntity.status(503)
