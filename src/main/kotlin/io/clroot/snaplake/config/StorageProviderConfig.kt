@@ -120,7 +120,13 @@ class StorageProviderConfig(
 
     override fun getUri(path: String): String = getDelegate().getUri(path)
 
-    override fun testConnection(): Boolean = getDelegate().testConnection()
+    override fun testConnection(): Boolean =
+        try {
+            getDelegate().testConnection()
+        } catch (e: Exception) {
+            log.warn("Storage connection test failed while loading the configured provider", e)
+            false
+        }
 
     override fun downloadToFile(
         path: String,
