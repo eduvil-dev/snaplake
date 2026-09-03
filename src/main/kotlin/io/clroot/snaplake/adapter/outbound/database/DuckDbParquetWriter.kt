@@ -104,7 +104,7 @@ class DuckDbParquetWriter : ParquetWritePort {
     ) {
         val obj = rs.getObject(columnIndex)
         if (obj == null) {
-            appender.append(null as String?)
+            appender.appendNull()
             return
         }
 

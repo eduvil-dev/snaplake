@@ -13,8 +13,8 @@ import javax.crypto.spec.SecretKeySpec
 
 @Component
 class AesEncryptionAdapter @Autowired constructor(
-    @Value("\${snaplake.encryption.key:}") private val configuredKey: String,
-    @Value("\${spring.profiles.active:}") private val activeProfilesRaw: String = "",
+    @param:Value("\${snaplake.encryption.key:}") private val configuredKey: String,
+    @param:Value("\${spring.profiles.active:}") private val activeProfilesRaw: String = "",
 ) : EncryptionPort {
     private val log = LoggerFactory.getLogger(javaClass)
 

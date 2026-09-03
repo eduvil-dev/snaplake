@@ -27,7 +27,7 @@ class SetupService(
             throw SystemAlreadyInitializedException()
         }
 
-        val passwordHash = passwordEncoder.encode(command.adminPassword)
+        val passwordHash = requireNotNull(passwordEncoder.encode(command.adminPassword))
         val user =
             User.create(
                 username = command.adminUsername,
