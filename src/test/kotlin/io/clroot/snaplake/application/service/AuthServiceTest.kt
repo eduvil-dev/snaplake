@@ -39,7 +39,7 @@ class AuthServiceTest :
         describe("login") {
             context("유효한 credentials인 경우") {
                 it("JWT 토큰을 반환한다") {
-                    val hashedPassword = passwordEncoder.encode("password123")
+                    val hashedPassword = requireNotNull(passwordEncoder.encode("password123"))
                     val user =
                         User.reconstitute(
                             id = UserId.generate(),
@@ -69,7 +69,7 @@ class AuthServiceTest :
 
             context("비밀번호가 틀린 경우") {
                 it("InvalidCredentialsException을 던진다") {
-                    val hashedPassword = passwordEncoder.encode("correct-password")
+                    val hashedPassword = requireNotNull(passwordEncoder.encode("correct-password"))
                     val user =
                         User.reconstitute(
                             id = UserId.generate(),
@@ -90,7 +90,7 @@ class AuthServiceTest :
         describe("changePassword") {
             context("현재 비밀번호가 맞는 경우") {
                 it("비밀번호를 변경한다") {
-                    val currentHash = passwordEncoder.encode("old-password")
+                    val currentHash = requireNotNull(passwordEncoder.encode("old-password"))
                     val userId = UserId.generate()
                     val user =
                         User.reconstitute(
@@ -117,7 +117,7 @@ class AuthServiceTest :
 
             context("현재 비밀번호가 틀린 경우") {
                 it("InvalidCredentialsException을 던진다") {
-                    val currentHash = passwordEncoder.encode("correct-password")
+                    val currentHash = requireNotNull(passwordEncoder.encode("correct-password"))
                     val user =
                         User.reconstitute(
                             id = UserId.generate(),

@@ -15,7 +15,7 @@ import java.nio.file.Path
 @Component
 class StorageProviderConfig(
     private val loadStorageConfigPort: LoadStorageConfigPort,
-    @Value("\${snaplake.data-dir}") private val dataDir: String,
+    @param:Value("\${snaplake.data-dir}") private val dataDir: String,
 ) : StorageProvider {
     private val log = LoggerFactory.getLogger(javaClass)
 
