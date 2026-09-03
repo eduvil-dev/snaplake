@@ -136,7 +136,10 @@ export function QueryEditor({
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onExecuteRef = useRef(onExecute)
-  onExecuteRef.current = onExecute
+
+  useEffect(() => {
+    onExecuteRef.current = onExecute
+  }, [onExecute])
 
   const completionSource = useMemo(
     () => buildCompletionSource(tables),

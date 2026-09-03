@@ -18,16 +18,16 @@ class SnaplakeCli(
 ) : CommandLineRunner {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         val mode = args.firstOrNull() ?: return // "server" mode is default (no CLI action needed)
 
         when (mode) {
             "snapshot" -> {
-                runSnapshot(args.drop(1).filterNotNull())
+                runSnapshot(args.drop(1))
             }
 
             "setup" -> {
-                runSetup(args.drop(1).filterNotNull())
+                runSetup(args.drop(1))
             }
 
             "server" -> {

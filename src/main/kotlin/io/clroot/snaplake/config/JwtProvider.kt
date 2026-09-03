@@ -11,8 +11,8 @@ import javax.crypto.spec.SecretKeySpec
 
 @Component
 class JwtProvider(
-    @Value("\${snaplake.jwt.secret:}") private val secret: String,
-    @Value("\${snaplake.jwt.expiration-hours:24}") private val expirationHours: Long,
+    @param:Value("\${snaplake.jwt.secret:}") private val secret: String,
+    @param:Value("\${snaplake.jwt.expiration-hours:24}") private val expirationHours: Long,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 

@@ -58,7 +58,7 @@ class AuthService(
             throw InvalidCredentialsException()
         }
 
-        val newHash = passwordEncoder.encode(command.newPassword)
+        val newHash = requireNotNull(passwordEncoder.encode(command.newPassword))
         val updatedUser =
             User.reconstitute(
                 id = user.id,
